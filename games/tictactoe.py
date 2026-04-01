@@ -84,20 +84,45 @@ class TicTacToe(Game):
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
         return any(self.check_direction(row, col, dr, dc) for dr, dc in directions)
 
+    def draw_winner_popup(self):
+        # Semi-transparent overlay
+        overlay = pygame.Surface((WINDOW_SIZE, WINDOW_SIZE))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        # Winner text
+        player_name = self.player1 if self.winner == 1 else self.player2
+        text = self.font.render(f"{player_name} (Player {self.winner}) wins!", True, (255, 255, 255))
+
+        text_rect = text.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2))
+        self.screen.blit(text, text_rect)
+
+        # Subtext
+        subtext = self.font.render("Click anywhere to exit", True, (200, 200, 200))
+        sub_rect = subtext.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2 + 50))
+        self.screen.blit(subtext, sub_rect)
+
     def run(self):
-        running = True
+    running = True
 
-        while running:
-            self.draw_grid()
-            self.draw_marks()
+    while running:
+        self.draw_grid()
+        self.draw_marks()
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+        if self.winner is not None:
+            self.draw_winner_popup()
 
-                elif event.type == pygame.MOUSEBUTTONDOWN:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.winner is None:
                     self.handle_click(pygame.mouse.get_pos())
+                else:
+                    running = False  # click after win → exit
 
-            pygame.display.flip()
+        pygame.display.flip()
 
-        pygame.quit()
+    pygame.quit()
