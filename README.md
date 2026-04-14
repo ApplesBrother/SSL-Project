@@ -1,3 +1,4 @@
+
 # Mini Game Hub
 
 ## 1. Project Overview
@@ -67,3 +68,4 @@ hub/
 - Add timers to the games
 - Display rules before the game starts
 - Make new games (including multi-player ones, not just 2 player)
+
