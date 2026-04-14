@@ -1,6 +1,7 @@
 from datetime import datetime
 from Connect4 import *
 from TicTacToe import *
+from Othello import *
 import csv
 
 class Game:
@@ -24,7 +25,7 @@ def start_game(player1, player2, game_name, mode, screen):
     elif game_name == "Connect4":
         game = Connect4(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
     elif game_name == "Othello":
-        game = Othello(player1, player2, mode, screen)
+        game = Othello(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV)
     elif game_name == "Chess":
         game = Chess(player1, player2, mode, screen)
     elif game_name == "Bazinga":
@@ -126,7 +127,7 @@ class GameSelected:
                         elif self.game==1:
                             game=Connect4(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         elif self.game==2:
-                            game=Othello(self.player1,self.player2,mode,self.screen)
+                            game=Othello(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         elif self.game==3:
                             game=Chess(self.player1,self.player2,mode,self.screen)
                         else:
