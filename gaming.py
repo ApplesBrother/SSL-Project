@@ -545,11 +545,9 @@ class HTP:
     def show_instructions(self, game_name):
         screen = pygame.display.get_surface()
         font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 25)
+        title_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 40)
 
         back_rect = pygame.Rect(20, 20, 100, 30)
-
-        scroll_y = 0
-        scroll_speed = 20
 
         instructions = {
             "TicTacToe": [
@@ -577,7 +575,10 @@ class HTP:
             pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
             screen.blit(font.render("Back", True, (255, 255, 255)), (back_rect.x + 10, back_rect.y + 5))
 
-            y = 100 + scroll_y
+            title_surface = title_font.render(game_name, True, (255, 255, 255))
+            screen.blit(title_surface, (300, 20))
+
+            y = 100
 
             for line in lines:
                 text = font.render(line, True, (255, 255, 255))
@@ -593,17 +594,6 @@ class HTP:
                     x, y = pygame.mouse.get_pos()
                     if back_rect.collidepoint(x, y):
                         return
-                    
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN:
-                        scroll_y -= scroll_speed
-                    elif event.key == pygame.K_UP:
-                        scroll_y += scroll_speed
-                
-                elif event.type == pygame.MOUSEWHEEL:
-                    scroll_y += event.y * scroll_speed
-
-                scroll_y = max(min(scroll_y, 0), -300)
 
 pygame.init()
 Bigscreen=pygame.display.set_mode((1000,700))
