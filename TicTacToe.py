@@ -39,12 +39,12 @@ class TicTacToe:
     def loadboard(self,board):
         for x,y in np.argwhere(board==1):
             background=pygame.image.load("lucky.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*x,190.5+57.5*y))
+            background=pygame.transform.scale(background,(25,25))
+            self.screen.blit(background,(295.5+42.5*x,190.5+40.5*y))
         for x,y in np.argwhere(board==2):
             background=pygame.image.load("MagicCatFace.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*x,190.5+57.5*y))
+            background=pygame.transform.scale(background,(25,25))
+            self.screen.blit(background,(295.5+42.5*x,190.5+40.5*y))
         pygame.display.flip()
 
     def clock(self,x,y,tleft,on):
@@ -63,7 +63,7 @@ class TicTacToe:
 
     def run(self):
         if self.mode in {0,1}:
-            background = pygame.image.load("Connect4Background.png")
+            background = pygame.image.load("TicTacToeBackground.png")
             background = pygame.transform.scale(background, (1000, 700))
             font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
             tfont = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 35)
@@ -136,12 +136,11 @@ class TicTacToe:
                                                  self.movearray)
                             resign.run()
                             return
-                        elif x in range(290, 900) and y in range(185, 755):
-                            if (x - 290) % 61 < 50:
-                                col = (x - 290) // 61
-                                if 0 not in self.board[col, :]:
-                                    continue
-                                row = (y - 185) // 57
+                        elif x in range(290, 710) and y in range(185, 575):
+                            if (x - 290) % 44 < 38:
+                                col = (x - 290) // 44
+                            if (y - 185) % 40 < 36:
+                                row = (y - 185) // 40
 
                                 if self.board[col][row] != 0:
                                     continue
@@ -152,8 +151,8 @@ class TicTacToe:
                                     img = pygame.image.load("lucky.png")
                                 else:
                                     img = pygame.image.load("MagicCatFace.png")
-                                img = pygame.transform.scale(img, (40, 40))
-                                self.screen.blit(img, (295.5 + 61.4 * col, 190.5 + 57.5 * row))
+                                img = pygame.transform.scale(img, (25,25))
+                                self.screen.blit(img, (295.5 + 42.5 * col, 190.5 + 40.5 * row))
                                 pygame.display.flip()
                                 result = TicTacToeWC(self.player1, self.player2, self.board, self.mode).run()
                                 if result != -1:
