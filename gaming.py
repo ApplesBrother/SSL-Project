@@ -479,6 +479,132 @@ class LEADERBOARD:
                     elif back_rect.collidepoint(x, y):
                         return
 
+class HTP:
+    def __init__(self):
+        pass
+
+    def run(self):
+        background = pygame.image.load("LEADERBOARD.png")
+        background = pygame.transform.scale(background, (1000, 700))
+        
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 40)
+        label_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 25)
+
+        ttt_img = pygame.image.load("ttt.png").convert_alpha()
+        c4_img = pygame.image.load("c4.png").convert_alpha()
+        othello_img = pygame.image.load("othello.png").convert_alpha()
+
+        ttt_img = pygame.transform.scale(ttt_img, (400, 200))
+        c4_img = pygame.transform.scale(c4_img, (400, 200))
+        othello_img = pygame.transform.scale(othello_img, (400, 200))
+
+        ttt_rect = ttt_img.get_rect(topleft=(75, 150))
+        c4_rect = c4_img.get_rect(topleft=(525, 150))
+        othello_rect = othello_img.get_rect(topleft=(300, 400))
+        back_rect = pygame.Rect(20, 20, 100, 30)
+
+        screen = pygame.display.get_surface()
+        previous_screen = screen.copy()
+
+        while True:
+            screen.blit(background, (0, 0))
+
+            title = font.render("How To Play", True, (255, 255, 255))
+            screen.blit(title, (300, 20))
+
+            screen.blit(ttt_img, ttt_rect)
+            screen.blit(c4_img, c4_rect)  
+            screen.blit(othello_img, othello_rect)
+
+            screen.blit(label_font.render("TicTacToe", True, (255, 255, 255)), (ttt_rect.x + 120, ttt_rect.y + 210)) 
+            screen.blit(label_font.render("Connect4", True, (255, 255, 255)), (c4_rect.x + 100, c4_rect.y + 210))
+            screen.blit(label_font.render("Othello", True, (255, 255, 255)), (othello_rect.x + 130, othello_rect.y + 210))
+
+            pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
+            back_text = label_font.render("Back", True, (255, 255, 255))
+            screen.blit(back_text, (back_rect.x + 10, back_rect.y + 5))
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    x,y = pygame.mouse.get_pos()
+                    if back_rect.collidepoint(x,y):
+                        screen.blit(previous_screen, (0, 0))
+                        pygame.display.flip()
+                        return
+                    elif ttt_rect.collidepoint(x,y):
+                        self.show_instructions("TicTacToe")
+                    elif c4_rect.collidepoint(x,y):
+                        self.show_instructions("Connect4")
+                    elif othello_rect.collidepoint(x,y):
+                        self.show_instructions("Othello")
+                    
+    def show_instructions(self, game_name):
+        screen = pygame.display.get_surface()
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 25)
+
+        back_rect = pygame.Rect(20, 20, 100, 30)
+
+        scroll_y = 0
+        scroll_speed = 20
+
+        instructions = {
+            "TicTacToe": [
+                "TicTacToe is a simple game where two players take turns marking spaces in a 3x3 grid.",
+                "The first player to get three of their marks in a row (horizontally, vertically, or diagonally) wins.",
+                "If all spaces are filled and no player has three in a row, the game is a draw."
+            ],
+            "Connect4": [
+                "Connect4 is a two-player connection game where players take turns dropping colored discs into a vertical grid.",
+                "The objective is to be the first to form a horizontal, vertical, or diagonal line of four of one's own discs.",
+                "The game ends when one player achieves this or when the board is completely filled, resulting in a draw."
+            ],
+            "Othello": [
+                "Othello is a strategy board game played on an 8x8 grid.",
+                "Players take turns placing their pieces on the board, with the goal of capturing their opponent's pieces by surrounding them.",
+                "The player with the most pieces on the board at the end of the game wins."
+            ]
+        }
+
+        lines = instructions[game_name]
+
+        while True:
+            screen.fill((0, 0, 0))
+
+            pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
+            screen.blit(font.render("Back", True, (255, 255, 255)), (back_rect.x + 10, back_rect.y + 5))
+
+            y = 100 + scroll_y
+
+            for line in lines:
+                text = font.render(line, True, (255, 255, 255))
+                screen.blit(text, (100, y))
+                y += 40
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = pygame.mouse.get_pos()
+                    if back_rect.collidepoint(x, y):
+                        return
+                    
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        scroll_y -= scroll_speed
+                    elif event.key == pygame.K_UP:
+                        scroll_y += scroll_speed
+                
+                elif event.type == pygame.MOUSEWHEEL:
+                    scroll_y += event.y * scroll_speed
+
+                scroll_y = max(min(scroll_y, 0), -300)
+
 pygame.init()
 Bigscreen=pygame.display.set_mode((1000,700))
 Biggame=FirstUI("Garv","Rajit",Bigscreen)
