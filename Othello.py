@@ -43,12 +43,12 @@ class Othello:
     def loadboard(self,board):
         for row,col in np.argwhere(board==1):
             background=pygame.image.load("lucky.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*col,190.5+57.5*row))
+            background=pygame.transform.scale(background,(33,33))
+            self.screen.blit(background,(287+56*col,187+51.5*row))
         for row,col in np.argwhere(board==2):
             background=pygame.image.load("MagicCatFace.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*col,190.5+57.5*row))
+            background=pygame.transform.scale(background,(33,33))
+            self.screen.blit(background,(287+56*col,187+51.5*row))
         pygame.display.flip()
 
     def clock(self,x,y,tleft,on):
@@ -118,7 +118,7 @@ class Othello:
 
     def run(self):
         if self.mode in {0,1}:
-            background = pygame.image.load("Connect4Background.png")
+            background = pygame.image.load("OthelloBackground.png")
             background = pygame.transform.scale(background, (1000, 700))
             font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
             tfont = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 35)
@@ -191,10 +191,11 @@ class Othello:
                                                  self.movearray)
                             resign.run()
                             return
-                        elif x in range(290, 778) and y in range(185, 641):
-                            if (x - 290) % 61 < 50:
-                                col = (x - 290) // 61
-                                row = (y - 185) // 57
+                        elif x in range(290, 710) and y in range(185, 575):
+                            if (x - 290) % 53 < 42:
+                                col = (x - 290) // 53
+                            if (y - 185) % 53 < 42:
+                                row = (y - 185) // 53
 
                                 if self.board[row][col] != 0:
                                     continue
@@ -210,13 +211,13 @@ class Othello:
                                     img = pygame.image.load("lucky.png")
                                 else:
                                     img = pygame.image.load("MagicCatFace.png")
-                                img = pygame.transform.scale(img, (40, 40))
-                                self.screen.blit(img, (295.5 + 61.4 * col, 190.5 + 57.5 * row))
+                                img = pygame.transform.scale(img, (33, 33))
+                                self.screen.blit(img, (287 + 56 * col, 187 + 51.5 * row))
                                 pygame.display.flip()
                                 result = OthelloWC(self.player1, self.player2, self.board, self.mode).run()
                                 if result != -1:
                                     self.turn = 1
-                                    game=self.UpdateCSV(self.player1, self.player2, "Connect4",result)
+                                    game=self.UpdateCSV(self.player1, self.player2, "Othello",result)
                                     game.run()
                                     game=self.CommonWC(self.player1, self.player2, result, self.mode, self.screen,
                                                          self.movearray)
