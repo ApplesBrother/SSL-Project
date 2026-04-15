@@ -9,23 +9,16 @@ class Game:
         names=["TicTacToe"," Connect4","    Othello","      Chess","Bazinga"]
         self.name=names[index]
 
-GAME_MAP = {
-    "TicTacToe": 0,
-    "Connect4": 1,
-    "Othello": 2,
-    "Chess": 3,
-    "Bazinga": 4
-}
+GAME_MAP = {"TicTacToe": 0,"Connect4": 1,"Othello": 2,"Chess": 3,"Bazinga": 4}
 
 def start_game(player1, player2, game_name, mode, screen):
     movearray = []
-
     if game_name == "TicTacToe":
         game = TicTacToe(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
     elif game_name == "Connect4":
         game = Connect4(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
     elif game_name == "Othello":
-        game = Othello(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV)
+        game = Othello(player1, player2, mode, screen)
     elif game_name == "Chess":
         game = Chess(player1, player2, mode, screen)
     elif game_name == "Bazinga":
@@ -127,7 +120,7 @@ class GameSelected:
                         elif self.game==1:
                             game=Connect4(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         elif self.game==2:
-                            game=Othello(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
+                            game=Othello(self.player1,self.player2,mode,self.screen)
                         elif self.game==3:
                             game=Chess(self.player1,self.player2,mode,self.screen)
                         else:
@@ -196,6 +189,10 @@ class CommonWC:
                         if x in range(210, 380) and y in range(565, 630):
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
+                            dfont=pygame.font.Font(None, 60)
+                            text=dfont.render("d",False, (255, 255, 255))
+                            self.screen.blit(text, (330, 580))
+                            pygame.display.flip()
                         elif x in range(415, 600) and y in range(565, 630):
                             game_name = self.movearray[0][1]
                             start_game(self.player1, self.player2, game_name, self.mode, self.screen)
@@ -210,6 +207,7 @@ class CommonWC:
             background = pygame.image.load("ItsaDraw.png")
             background = pygame.transform.scale(background, (1000, 700))
             self.screen.blit(background, (0, 0))
+            pygame.draw.rect(self.screen, (255, 255, 0), (415, 575, 215, 68), 4, 20)
             pygame.display.flip()
             running=True
             while running:
@@ -223,6 +221,8 @@ class CommonWC:
                         elif x in range(420,625) and y in range(575,640):
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
+                            self.screen.blit(background, (0, 0))
+                            pygame.display.flip()
                         elif x in range(650,800) and y in range(575,640):
                             game_name = self.movearray[0][1]
                             game_index = GAME_MAP[game_name]
@@ -329,7 +329,6 @@ class LEADERBOARD:
 
     def run(self):
         previous_screen = self.screen.copy()
-
         background = pygame.image.load("LEADERBOARD.png")
         background = pygame.transform.scale(background, (1000, 700))
 
@@ -482,5 +481,5 @@ class LEADERBOARD:
 
 pygame.init()
 Bigscreen=pygame.display.set_mode((1000,700))
-Biggame=FirstUI("Kavya","Rajit",Bigscreen)
+Biggame=FirstUI("Garv","Rajit",Bigscreen)
 Biggame.run()
