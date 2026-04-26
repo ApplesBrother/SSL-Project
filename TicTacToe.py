@@ -125,17 +125,13 @@ class TicTacToe:
                         elif x in range(785, 915) and y in range(425, 475):
                             draw2 = not draw2
                         elif x in range(85, 215) and y in range(490, 545):
-                            self.turn = 1
                             resign = self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 2,
                                                  self.movearray)
                             resign.run()
-                            return
                         elif x in range(780, 915) and y in range(490, 545):
-                            self.turn = 1
                             resign = self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 1,
                                                  self.movearray)
                             resign.run()
-                            return
                         elif x in range(290, 710) and y in range(185, 575):
                             if (x - 290) % 44 < 38:
                                 col = (x - 290) // 44

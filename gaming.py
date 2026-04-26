@@ -2,27 +2,35 @@ from datetime import datetime
 from Connect4 import *
 from TicTacToe import *
 from Othello import *
+from Catan import *
 import csv
 
 class Game:
     def __init__(self,index):
-        names=["TicTacToe"," Connect4","    Othello","      Chess","Bazinga"]
+        names=["TicTacToe"," Connect4","    Othello","      Chess","Catan"]
         self.name=names[index]
 
-GAME_MAP = {"TicTacToe": 0,"Connect4": 1,"Othello": 2,"Chess": 3,"Bazinga": 4}
+GAME_MAP = {
+    "TicTacToe": 0,
+    "Connect4": 1,
+    "Othello": 2,
+    "Chess": 3,
+    "Catan": 4
+}
 
 def start_game(player1, player2, game_name, mode, screen):
     movearray = []
+
     if game_name == "TicTacToe":
         game = TicTacToe(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
     elif game_name == "Connect4":
         game = Connect4(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
     elif game_name == "Othello":
-        game = Othello(player1, player2, mode, screen)
+        game = Othello(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV)
     elif game_name == "Chess":
         game = Chess(player1, player2, mode, screen)
-    elif game_name == "Bazinga":
-        game = Bazinga(player1, player2, mode, screen)
+    elif game_name == "Catan":
+        game = Catan(player1, player2, mode, screen, GameSelected, Resign, CommonWC, UpdateCSV, movearray)
 
     game.run()
 
@@ -120,11 +128,11 @@ class GameSelected:
                         elif self.game==1:
                             game=Connect4(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         elif self.game==2:
-                            game=Othello(self.player1,self.player2,mode,self.screen)
+                            game=Othello(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         elif self.game==3:
                             game=Chess(self.player1,self.player2,mode,self.screen)
                         else:
-                            game=Bazinga(self.player1,self.player2,mode,self.screen)
+                            game=Catan(self.player1,self.player2,mode,self.screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray)
                         game.run()
         pygame.quit()
 
@@ -154,8 +162,7 @@ class Resign:
                         game = CommonWC(self.player1, self.player2, self.whowon, self.mode ,self.screen,self.movearray)
                         game.run()
                     elif x in range(395, 605) and y in range(620, 670):
-                        game_name = self.movearray[0][1]
-                        start_game(self.player1, self.player2, game_name, self.mode, self.screen)
+                        return
 
 class CommonWC:
     def __init__(self,player1,player2,whowon,mode,screen,movearray):
@@ -189,10 +196,6 @@ class CommonWC:
                         if x in range(210, 380) and y in range(565, 630):
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
-                            dfont=pygame.font.Font(None, 60)
-                            text=dfont.render("d",False, (255, 255, 255))
-                            self.screen.blit(text, (330, 580))
-                            pygame.display.flip()
                         elif x in range(415, 600) and y in range(565, 630):
                             game_name = self.movearray[0][1]
                             start_game(self.player1, self.player2, game_name, self.mode, self.screen)
@@ -207,7 +210,6 @@ class CommonWC:
             background = pygame.image.load("ItsaDraw.png")
             background = pygame.transform.scale(background, (1000, 700))
             self.screen.blit(background, (0, 0))
-            pygame.draw.rect(self.screen, (255, 255, 0), (415, 575, 215, 68), 4, 20)
             pygame.display.flip()
             running=True
             while running:
@@ -221,8 +223,6 @@ class CommonWC:
                         elif x in range(420,625) and y in range(575,640):
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
-                            self.screen.blit(background, (0, 0))
-                            pygame.display.flip()
                         elif x in range(650,800) and y in range(575,640):
                             game_name = self.movearray[0][1]
                             game_index = GAME_MAP[game_name]
@@ -329,6 +329,7 @@ class LEADERBOARD:
 
     def run(self):
         previous_screen = self.screen.copy()
+
         background = pygame.image.load("LEADERBOARD.png")
         background = pygame.transform.scale(background, (1000, 700))
 
@@ -478,7 +479,7 @@ class LEADERBOARD:
                                 break
                     elif back_rect.collidepoint(x, y):
                         return
-
+                    
 class HTP:
     def __init__(self):
         pass
@@ -597,5 +598,5 @@ class HTP:
 
 pygame.init()
 Bigscreen=pygame.display.set_mode((1000,700))
-Biggame=FirstUI("Garv","Rajit",Bigscreen)
+Biggame=FirstUI("Kavya","Rajit",Bigscreen)
 Biggame.run()

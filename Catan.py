@@ -781,7 +781,6 @@ class Catan:
                             self.movearray
                         )
                         resign.run()
-                        return
 
                     if self.turn == 2 and 830 <= mx <= 950 and 150 <= my <= 190:
                         resign = self.Resign(
@@ -794,7 +793,6 @@ class Catan:
                             self.movearray
                         )
                         resign.run()
-                        return
 
                     v = self.get_clicked_vertex((mx, my))
                     if v is not None:
