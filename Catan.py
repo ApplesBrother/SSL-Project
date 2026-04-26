@@ -1,3 +1,5 @@
+from os import name
+
 import pygame
 import numpy as np
 import time
@@ -24,14 +26,11 @@ class Catan:
         self.x2, self.y2 = 710, 575
         self.size = 80
 
-        self.tiles = {
-            "wood": pygame.image.load("wood.png"),
-            "brick": pygame.image.load("brick.png"),
-            "wool": pygame.image.load("wool.png"),
-            "wheat": pygame.image.load("wheat.png"),
-            "ore": pygame.image.load("ore.png"),
-            "desert": pygame.image.load("desert.png")
-        }
+        self.tiles = {}
+        for name in ["wood", "brick", "wool", "wheat", "ore"]:
+            img = pygame.image.load(f"{name}.png").convert()
+            img.set_colorkey((255, 255, 255))  # remove white background
+            self.tiles[name] = img
 
         hex_width = int(self.size * 2)
         hex_height = int(math.sqrt(3) * self.size)
