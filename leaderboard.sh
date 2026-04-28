@@ -1,31 +1,44 @@
 #!/bin/bash
 
-SORT_BY=$1
-
-if [[ -z "$SORT_BY" ]]; then
-    SORT_BY="wins"
-fi
-
-if [[ "$SORT_BY" != "wins" && "$SORT_BY" != "losses" && "$SORT_BY" != "ratio" ]]; then
-    echo "Invalid sort metric. Use: wins | losses | ratio"
-    exit 1
-fi
-
+GAME_FILTER=$1
 FILE="history.csv"
 
-if [[ ! -f "$FILE" ]]; then
-    echo "history.csv not found!"
+VALID_GAMES=( "Overall" "TicTacToe" "Connect4" "Othello" "Catan" )
+
+if [[ -z "$GAME_FILTER" ]]; then
+    echo "Usage: $0 [game]"
     exit 1
 fi
 
-# Skip header and process
-awk -F',' '
-NR > 1 {
-    p1 = $3
-    p2 = $4
-    game = $5
-    result = $6
+is_valid=false
+for g in "${VALID_GAMES[@]}";do
+    if [[ "$GAME_FILTER" == "$g" ]]; then
+        is_valid=true
+        break
+    fi
+done
 
+if [[ "$is_valid" == false ]]; then
+    echo "Invalid game. Use one of: ${VALID_GAMES[*]}"
+    exit 1
+fi
+
+if [[ ! -f "$FILE" ]]; then
+    echo "history.csv not found"
+    exit 1
+fi
+
+generate_leaderboard(){
+awk -F ',' -v game_filter="$GAME_FILTER" '
+NR > 1{
+    game = $3
+    p1 = $4
+    p2 = $5
+    result = $6
+    
+    if (game_filter != "Overall" && game != game_filter)
+        next
+    
     key1 = game ":" p1
     key2 = game ":" p2
 
@@ -34,17 +47,17 @@ NR > 1 {
     games[key1] = game
     games[key2] = game
 
-    if (result == 1) {
+    if (result == 1){
         wins[key1]++
         losses[key2]++
-    } else if (result == 2) {
+    } else if (result == 2){
         wins[key2]++
         losses[key1]++
     } else if (result == 0){
-	wins[key1] += 0.5
-	losses[key1] += 0.5
-	wins[key2] += 0.5
-	losses[key2] += 0.5
+        wins[key1] += 0.5
+        losses[key1] += 0.5
+        wins[key2] += 0.5
+        losses[key2] += 0.5
     }
 }
 END {
@@ -64,27 +77,51 @@ END {
         game = arr[1]
         player = arr[2]
 
-        printf "%s,%s,%.1f,%.1f,%.6f,%s\n", game, player, w, l, ratio_num, ratio_str
+        printf "%s, %s, %.1f, %.1f, %.6f, %s\n", game, player, w, l, ratio_num, ratio_str
     }
 }
 ' "$FILE" > temp_leaderboard.csv
+}
 
-# Decide sort column
-if [[ "$SORT_BY" == "wins" ]]; then
-    SORT_COL=3
-elif [[ "$SORT_BY" == "losses" ]]; then
-    SORT_COL=4
-else
-    SORT_COL=5
-fi
+print_leaderboard(){
+    SORT_BY=$1
 
-# Print formatted table
-printf "\n%-15s %-15s %-10s %-10s %-10s\n" "Game" "Player" "Wins" "Losses" "Ratio"
-printf "%s\n" "---------------------------------------------------------------------"
+    if [[ "$SORT_BY" == "wins" ]]; then
+        SORT_COL=3
+    elif [[ "$SORT_BY" == "losses" ]]; then
+        SORT_COL=4
+    else
+        SORT_COL=5
+    fi
 
-sort -t',' -k$SORT_COL -nr -k3 -nr temp_leaderboard.csv | while IFS=',' read -r game player wins losses ratio_num ratio
-do
-    printf "%-15s %-15s %-10s %-10s %-10s\n" "$game" "$player" "$wins" "$losses" "$ratio"
+    printf "\n%-15s %-15s %-10s %-10s %-10s\n" "Game" "Player" "Wins" "Losses" "Ratio"
+    printf "%s\n" "---------------------------------------------------------------------"
+
+    sort -t ',' -k $SORT_COL -nr -k3 -nr temp_leaderboard.csv | while IFS=',' read -r game player wins losses ratio_num ratio
+    do
+        printf "%-15s %-15s %-10s %-10s %-10s\n" "$game" "$player" "$wins" "$losses" "$ratio"
+    done
+}
+
+generate_leaderboard
+
+current_sort="wins"
+print_leaderboard "$current_sort"
+
+while true; do
+    echo ""
+    read -p "Enter sort (wins/losses/ratio) or 'exit': " input
+
+    if [[ "$input" == "exit" ]]; then
+        break
+    fi
+    if [[ "$input" != "wins" && "$input" != "losses" && "$input" != "ratio" ]]; then
+        echo "Invalid input."
+        continue
+    fi
+
+    current_sort="$input"
+    print_leaderboard "$current_sort"
 done
 
 rm temp_leaderboard.csv
