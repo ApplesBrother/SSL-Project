@@ -39,8 +39,8 @@ NR > 1{
     if (game_filter != "Overall" && game != game_filter)
         next
     
-    key1 = game ":" p1
-    key2 = game ":" p2
+    key1 = p1
+    key2 = p2
 
     players[key1] = p1
     players[key2] = p2
@@ -73,11 +73,9 @@ END {
             ratio_str = sprintf("%.3f", ratio_num)
         }
 
-        split(k, arr, ":")
-        game = arr[1]
-        player = arr[2]
+        player = k
 
-        printf "%s, %s, %.1f, %.1f, %.6f, %s\n", game, player, w, l, ratio_num, ratio_str
+        printf "%s, %.1f, %.1f, %.6f, %s\n", player, w, l, ratio_num, ratio_str
     }
 }
 ' "$FILE" > temp_leaderboard.csv
@@ -87,19 +85,19 @@ print_leaderboard(){
     SORT_BY=$1
 
     if [[ "$SORT_BY" == "wins" ]]; then
-        SORT_COL=3
+        SORT_COL=2
     elif [[ "$SORT_BY" == "losses" ]]; then
-        SORT_COL=4
+        SORT_COL=3
     else
-        SORT_COL=5
+        SORT_COL=4
     fi
 
-    printf "\n%-15s %-15s %-10s %-10s %-10s\n" "Game" "Player" "Wins" "Losses" "Ratio"
+    printf "\n%-15s %-10s %-10s %-10s\n" "Player" "Wins" "Losses" "Ratio"
     printf "%s\n" "---------------------------------------------------------------------"
 
-    sort -t ',' -k $SORT_COL -nr -k3 -nr temp_leaderboard.csv | while IFS=',' read -r game player wins losses ratio_num ratio
+    sort -t ',' -k $SORT_COL -nr -k3 -nr temp_leaderboard.csv | while IFS=',' read -r player wins losses ratio_num ratio
     do
-        printf "%-15s %-15s %-10s %-10s %-10s\n" "$game" "$player" "$wins" "$losses" "$ratio"
+        printf "%-15s %-10s %-10s %-10s\n" "$player" "$wins" "$losses" "$ratio"
     done
 }
 
