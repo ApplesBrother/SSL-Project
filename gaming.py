@@ -61,7 +61,7 @@ class FirstUI:
                     elif x in range(694, 694 + 147) and y in range(305, 305 + 55):
                         settings = SETTINGS(self.screen, self.player1, self.player2)
                         settings.run()
-                    elif y in range(390, 491):
+                    elif y in range(390, 520):
                         if ((x - 210) % 145) < 130 and x < 750:
                             n = ((x - 210) // 145)
                             gameselected = GameSelected(self.player1, self.player2, n, self.screen)
@@ -185,6 +185,7 @@ class CommonWC:
                 font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 60)
                 text = font.render(self.player1, False, (255, 255, 255))
                 self.screen.blit(text, (390, 440))
+                pygame.draw.rect(self.screen, (255, 255, 0), (223, 523, 137, 57), 4, 18)
                 pygame.display.flip()
             elif self.whowon == 2:
                 font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 60)
@@ -205,12 +206,16 @@ class CommonWC:
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
                             self.screen.blit(background, (0, 0))
+                            self.screen.blit(text, (390, 440))
                             pygame.display.flip()
                         elif x in range(372, 503) and y in range(523, 576):
                             game = STATS(self.player1, self.player2, self.screen, self.gameidx)
                             game.run()
                         elif x in range(517, 673) and y in range(523, 576):
                             game = Game(self.gameidx).game
+                            if self.mode in {0,2}:
+                                game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC, Pause, self.movearray, turn=1)
+                                game.run()
                             if self.mode == 1.1:
                                 selected_time = 5
                             elif self.mode == 1.2:
@@ -242,7 +247,10 @@ class CommonWC:
                         x, y = pygame.mouse.get_pos()
                         if x in range(150, 315) and y in range(575, 640):
                             game = Game(self.gameidx).game
-                            if self.mode == 1.1:
+                            if self.mode in {0,2}:
+                                game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC, Pause, self.movearray, turn=1)
+                                game.run()
+                            elif self.mode == 1.1:
                                 selected_time = 5
                             elif self.mode == 1.2:
                                 selected_time = 10
@@ -321,6 +329,9 @@ class Pause:
                         game.run()
                     elif x in range(240, 480) and y in range(560, 630):
                         game = Game(self.gameidx).game
+                        if self.mode in {0, 2}:
+                            game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign,CommonWC, Pause, self.movearray, turn=1)
+                            game.run()
                         if self.mode == 1.1:
                             selected_time = 5
                         elif self.mode == 1.2:
