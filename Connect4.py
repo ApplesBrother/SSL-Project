@@ -4,11 +4,11 @@ import time
 import math
 draw1=False
 draw2=False
-turn=1
 
 class Connect4:
-    def __init__(self,player1,player2,mode,screen,GameSelected,Resign,CommonWC,UpdateCSV,movearray):
-        if mode in {0,1}:
+    def __init__(self,player1,player2,mode,screen,GameSelected,Resign,CommonWC,Pause,movearray,t1=0,t2=0,turn=1,board=None,last_tick=time.time()):
+        self.idx=1
+        if int(mode) in {0,1,2}:
             self.player1=player1
             self.player2=player2
             self.screen=screen
@@ -17,35 +17,31 @@ class Connect4:
             self.movearray=movearray
             self.Resign=Resign
             self.CommonWC=CommonWC
-            self.board=np.zeros((7,7))
-            self.timed=(mode==1)
-            self.t1=10
-            self.t2=10
-            self.last_tick=time.time()
-            self.turn=1
-            self.UpdateCSV=UpdateCSV
-
-        elif mode==2:
-            self.player1=player1
-            self.player2=player2
-            self.screen=screen
-            self.mode=mode
+            self.board = board.copy() if board is not None else np.zeros((7,7))
+            self.timed=(int(mode)!=mode)
+            self.turn=turn
+            self.Pause=Pause
+            self.t1=t1
+            self.t2=t2
+            self.last_tick=last_tick
         elif mode==3:
-            self.player1=player1
-            self.player2=player2
-            self.screen=screen
-            self.mode=mode
+            self.player1 = player1
+            self.player2 = player2
+            self.screen = screen
+            self.mode = mode
+            self.movearray = movearray
+            self.board = np.zeros((7, 7))
+            self.turn = 1
 
     def loadboard(self,board):
         for x,y in np.argwhere(board==1):
-            background=pygame.image.load("lucky.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*x,190.5+57.5*y))
+            img=pygame.image.load("lucky.png")
+            img=pygame.transform.scale(img,(40,40))
+            self.screen.blit(img,(295.5+61.4*x,190.5+57.5*y))
         for x,y in np.argwhere(board==2):
-            background=pygame.image.load("MagicCatFace.png")
-            background=pygame.transform.scale(background,(40,40))
-            self.screen.blit(background,(295.5+61.4*x,190.5+57.5*y))
-        pygame.display.flip()
+            img=pygame.image.load("MagicCatFace.png")
+            img=pygame.transform.scale(img,(40,40))
+            self.screen.blit(img,(295.5+61.4*x,190.5+57.5*y))
 
     def clock(self,x,y,tleft,on):
         color=(200,200,200) if on else (120,120,120)
@@ -62,7 +58,7 @@ class Connect4:
         return f"{t//60}:{t%60:02d}"
 
     def run(self):
-        if self.mode in {0,1}:
+        if int(self.mode) in {0,2}:
             background = pygame.image.load("Connect4Background.png")
             background = pygame.transform.scale(background, (1000, 700))
             font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
@@ -71,120 +67,145 @@ class Connect4:
             global draw1, draw2
             draw1 = False
             draw2 = False
-            self.movearray.append((0,"Connect4",0))
             while running:
                 self.screen.blit(background, (0, 0))
+                if self.timed:
+                    presenttime = time.time()
+                    dt = presenttime - self.last_tick
+                    self.last_tick = presenttime
+
+                    if self.turn == 1:
+                        self.t1 -= dt
+                        if self.t1 <= 0:
+                            self.CommonWC(self.player1, self.player2, 2, self.mode+1, self.screen, self.movearray,
+                                          self.idx).run()
+                            return
+                    else:
+                        self.t2 -= dt
+                        if self.t2 <= 0:
+                            self.CommonWC(self.player1, self.player2, 1, self.mode+1, self.screen, self.movearray,
+                                          self.idx).run()
+                            return
                 text = font.render(self.player1, False, (255, 255, 255))
                 text.set_alpha(150)
                 self.screen.blit(text, (145, 45))
                 text = font.render(self.player2, False, (255, 255, 255))
                 text.set_alpha(150)
                 self.screen.blit(text, (640, 45))
-                if self.timed:
-                    presenttime = time.time()
-                    dt = presenttime - self.last_tick
-                    self.last_tick = presenttime
-                    if self.turn == 1:
-                        self.t1 -= dt
-                    else:
-                        self.t2-=dt
-                    t1 = tfont.render(self.writetime(self.t1), False, (255, 255, 255))
-                    t2 = tfont.render(self.writetime(self.t2), False, (255, 255, 255))
-                    self.screen.blit(t1, (120, 185))
-                    self.screen.blit(t2, (810, 185))
-                    self.clock(160, 300, self.t1, self.turn == 1)
-                    self.clock(845, 300, self.t2, self.turn == 2)
-                    if self.t1<0:
-                        self.turn = 1
-                        game = self.CommonWC(self.player1, self.player2, 2, self.mode, self.screen, self.movearray)
-                        game.run()
-                        return
-                    if self.t2<0:
-                        self.turn = 1
-                        game = self.CommonWC(self.player1, self.player2, 1, self.mode, self.screen, self.movearray)
-                        game.run()
-                        return
                 if draw1 and draw2:
                     draw1 = False
                     draw2 = False
                     self.turn = 1
                     self.movearray.append((0, "Match Drawn", 0))
-                    game=self.UpdateCSV(self.player1,self.player2,"Connect4",0)
-                    game.run()
-                    game = self.CommonWC(self.player1, self.player2, 0, self.mode, self.screen, self.movearray)
-                    game.run()
-                    return
+                    self.CommonWC(self.player1, self.player2, 0, self.mode+self.timed, self.screen, self.movearray,self.idx).run()
                 self.loadboard(self.board)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        running = False
+                        return
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         x, y = pygame.mouse.get_pos()
+                        if (x-63)**2+(y-61)**2<2025:
+                            self.Pause(self.player1,self.player2,self.board,self.screen,self.mode+self.timed,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2).run()
                         if x in range(85, 215) and y in range(425, 475):
                             draw1 = not draw1
                         elif x in range(785, 915) and y in range(425, 475):
                             draw2 = not draw2
                         elif x in range(85, 215) and y in range(490, 545):
-                            resign = self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 2,
-                                                 self.movearray)
-                            resign.run()
+                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode+self.timed, 2,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2,last_tick=self.last_tick).run()
                         elif x in range(780, 915) and y in range(490, 545):
-                            resign = self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 1,
-                                                 self.movearray)
-                            resign.run()
+                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode+self.timed, 1,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2,last_tick=self.last_tick).run()
                         elif x in range(290, 710) and y in range(185, 575):
                             if (x - 290) % 61 < 50:
                                 col = (x - 290) // 61
                                 if 0 not in self.board[col, :]:
                                     continue
-                                arr = self.board[col, :]
-                                row = np.where(arr == 0)[0][-1]
+                                row = np.where(self.board[col, :] == 0)[0][-1]
                                 self.board[col][row] = self.turn
                                 self.movearray.append((self.turn,col,int(row)))
-                                if self.turn == 1:
-                                    img = pygame.image.load("lucky.png")
-                                else:
-                                    img = pygame.image.load("MagicCatFace.png")
+                                img = pygame.image.load("lucky.png" if self.turn==1 else "MagicCatFace.png")
                                 img = pygame.transform.scale(img, (40, 40))
                                 self.screen.blit(img, (295.5 + 61.4 * col, 190.5 + 57.5 * row))
                                 pygame.display.flip()
-                                result = Connect4WC(self.player1, self.player2, self.board, self.mode).run()
+                                result = Connect4WC(self.board).run()
                                 if result != -1:
                                     self.turn = 1
-                                    game=self.UpdateCSV(self.player1, self.player2, "Connect4",result)
-                                    game.run()
-                                    game=self.CommonWC(self.player1, self.player2, result, self.mode, self.screen,
-                                                         self.movearray)
-                                    game.run()
-                                    return
+                                    self.CommonWC(self.player1, self.player2, result, self.mode+self.timed, self.screen,self.movearray,self.idx).run()
                                 self.turn = 3 - self.turn
-                                if self.timed:
-                                    self.last_tick = time.time()
+                if draw1:
+                    pygame.draw.rect(self.screen, (255, 255, 255), (84, 426, 135, 58), 4, 20)
+                if draw2:
+                    pygame.draw.rect(self.screen, (255, 255, 255), (781, 425, 136, 54), 4, 20)
+                if self.timed:
+                    self.clock(150, 150, self.t1, self.turn == 1)
+                    self.clock(850, 150, self.t2, self.turn == 2)
+                    time1 = tfont.render(self.writetime(self.t1), True, (255, 255, 255))
+                    time2 = tfont.render(self.writetime(self.t2), True, (255, 255, 255))
+
+                    self.screen.blit(time1, (110, 230))
+                    self.screen.blit(time2, (810, 230))
+
+
                 pygame.display.flip()
-            pygame.quit()
+        elif int(self.mode) == 1:
+            if self.mode==1:
+                background = pygame.image.load("TimeSelect.png")
+                background = pygame.transform.scale(background, (1000, 700))
+                self.screen.blit(background, (0, 0))
+                pygame.display.flip()
+                while True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            x, y = pygame.mouse.get_pos()
+                            selected_time = None
+
+                            if x in range(123, 227) and y in range(262, 390):
+                                selected_time = 5
+                                self.mode = 1.1
+                            elif x in range(251, 387) and y in range(255, 391):
+                                selected_time = 10
+                                self.mode = 1.2
+                            elif x in range(405, 569) and y in range(249, 413):
+                                selected_time = 15
+                                self.mode = 1.3
+                            elif x in range(585, 729) and y in range(253, 413):
+                                selected_time = 20
+                                self.mode = 1.4
+                            elif x in range(742, 910) and y in range(245, 405):
+                                selected_time = 30
+                                self.mode = 1.5
+                            if selected_time is not None:
+                                seconds = selected_time * 60
+                                game = Connect4(self.player1, self.player2, self.mode - 1, self.screen,self.GameSelected, self.Resign, self.CommonWC, self.Pause,self.movearray,t1=seconds,t2=seconds, turn=1, last_tick=time.time())
+                                game.run()
+            else:
+                game=Connect4(self.player1, self.player2, self.mode - 1, self.screen, self.GameSelected, self.Resign, self.CommonWC, self.Pause,self.movearray, t1=self.t1, t2=self.t2,turn=self.turn,board=self.board,last_tick=time.time())
+                game.run()
+
+        elif self.mode==3:
+            background = pygame.image.load("SavedGames.png")
+            background = pygame.transform.scale(background, (1000, 700))
+            self.screen.blit(background, (0, 0))
+            pygame.display.flip()
+            clock = pygame.time.Clock()
+            running = True
+            sortedarray=[]
+            for i in range(len(self.movearray)):
+                if self.movearray[i][0].type!=str:
+                    sortedarray.append(self.movearray[i][1])
+            while running:
+                self.screen.blit(background, (0, 0))
+                self.loadboard(self.board)
+                pygame.display.flip()
+                clock.tick(30)
 
 class Connect4WC:
-    def __init__(self,player1,player2,board,mode):
-        self.player1=player1
-        self.player2=player2
+    def __init__(self,board):
         self.board=board
-        self.mode=mode
     def run(self):
         for i in (1,2):
-            if np.any(np.all(np.stack([self.board[:,j:j+4] for j in range(4)],axis=0)==i,axis=0)):
-                return i
-            if np.any(np.all(np.stack([self.board[j:j+4,:] for j in range(4)],axis=0)==i,axis=0)):
-                return i
-            if np.any(np.all(np.stack([self.board[j:j+4,j:j+4] for j in range(4)],axis=0)==i,axis=0)):
-                return i
-            if np.any(np.all(np.stack([self.board[j:j+4,3-j:7-j] for j in range(4)],axis=0)==i,axis=0)):
-                return i
-        if 0 not in self.board:
-            return 0
+            if np.any(np.all(np.stack([self.board[:,j:j+4] for j in range(4)],axis=0)==i,axis=0)): return i
+            if np.any(np.all(np.stack([self.board[j:j+4,:] for j in range(4)],axis=0)==i,axis=0)): return i
+            if np.any(np.all(np.stack([self.board[j:j+4,j:j+4] for j in range(4)],axis=0)==i,axis=0)): return i
+            if np.any(np.all(np.stack([self.board[j:j+4,3-j:7-j] for j in range(4)],axis=0)==i,axis=0)): return i
+        if 0 not in self.board: return 0
         return -1
-
-class Timer:
-    def __init__(self,player1,player2,screen):
-        self.player1=player1
-        self.player2=player2
-        self.screen=screen

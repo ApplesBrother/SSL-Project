@@ -61,7 +61,7 @@ class FirstUI:
                     elif x in range(694, 694 + 147) and y in range(305, 305 + 55):
                         settings = SETTINGS(self.screen, self.player1, self.player2)
                         settings.run()
-                    elif y in range(390, 491):
+                    elif y in range(390, 520):
                         if ((x - 210) % 145) < 130 and x < 750:
                             n = ((x - 210) // 145)
                             gameselected = GameSelected(self.player1, self.player2, n, self.screen)
@@ -107,11 +107,7 @@ class GameSelected:
                     elif x in range(300, 700) and y in range(640, 685):
                         firstui = FirstUI(self.player1, self.player2, self.screen)
                         firstui.run()
-                    
-                    if mode == 3:
-                        saved = SavedGames(self.player1, self.player2, self.screen, self.gameidx)
-                        saved.run()
-                    if mode in {0, 1, 2}:
+                    if mode in {0, 1, 2, 3}:
                         movearray = []
                         game = game(self.player1, self.player2, mode, self.screen, GameSelected, Resign, CommonWC,
                                     Pause, movearray)
@@ -161,7 +157,7 @@ class Resign:
                     elif x in range(395, 605) and y in range(620, 670):
                         game = Game(self.gameidx).game
                         game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray, self.turn, self.t1, self.t2, self.last_tick, self.board)
+                                    Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board, last_tick=self.last_tick)
                         game.run()
 
 
@@ -189,6 +185,7 @@ class CommonWC:
                 font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 60)
                 text = font.render(self.player1, False, (255, 255, 255))
                 self.screen.blit(text, (390, 440))
+                pygame.draw.rect(self.screen, (255, 255, 0), (223, 523, 137, 57), 4, 18)
                 pygame.display.flip()
             elif self.whowon == 2:
                 font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 60)
@@ -209,27 +206,28 @@ class CommonWC:
                             with open("SavedGames.txt", "a") as SavedGames:
                                 SavedGames.write(str(self.movearray) + "\n")
                             self.screen.blit(background, (0, 0))
+                            self.screen.blit(text, (390, 440))
                             pygame.display.flip()
                         elif x in range(372, 503) and y in range(523, 576):
                             game = STATS(self.player1, self.player2, self.screen, self.gameidx)
                             game.run()
                         elif x in range(517, 673) and y in range(523, 576):
                             game = Game(self.gameidx).game
-                            game = game(
-                                self.player1,
-                                self.player2,
-                                self.mode,
-                                self.screen,
-                                GameSelected,
-                                Resign,
-                                CommonWC,
-                                Pause,
-                                self.movearray,
-                                turn=1,
-                                t1=self.t1,
-                                t2=self.t2,
-                                last_tick=time.time()
-                            )
+                            if self.mode in {0,2}:
+                                game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC, Pause, self.movearray, turn=1)
+                                game.run()
+                            if self.mode == 1.1:
+                                selected_time = 5
+                            elif self.mode == 1.2:
+                                selected_time = 10
+                            elif self.mode == 1.3:
+                                selected_time = 15
+                            elif self.mode == 1.4:
+                                selected_time = 20
+                            elif self.mode == 1.5:
+                                selected_time = 30
+                            seconds = selected_time * 60
+                            game = game(self.player1,self.player2,self.mode,self.screen,GameSelected,Resign,CommonWC,Pause,self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                             game.run()
                         elif x in range(686, 819) and y in range(523, 576):
                             gameselected = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
@@ -249,8 +247,22 @@ class CommonWC:
                         x, y = pygame.mouse.get_pos()
                         if x in range(150, 315) and y in range(575, 640):
                             game = Game(self.gameidx).game
+                            if self.mode in {0,2}:
+                                game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC, Pause, self.movearray, turn=1)
+                                game.run()
+                            elif self.mode == 1.1:
+                                selected_time = 5
+                            elif self.mode == 1.2:
+                                selected_time = 10
+                            elif self.mode == 1.3:
+                                selected_time = 15
+                            elif self.mode == 1.4:
+                                selected_time = 20
+                            elif self.mode == 1.5:
+                                selected_time = 30
+                            seconds = selected_time * 60
                             game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign,
-                                        CommonWC, Pause, self.movearray,turn=1,t1=self.t1,t2=self.t2,last_tick=time.time())
+                                        CommonWC, Pause, self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                             game.run()
                         elif x in range(340, 555) and y in range(575, 640):
                             self.movearray = [(datetime.now().replace(microsecond=0), Game(self.gameidx).name,
@@ -313,176 +325,29 @@ class Pause:
                     x, y = pygame.mouse.get_pos()
                     if x in range(375, 620) and y in range(470, 540):
                         game = Game(self.gameidx).game
-                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray, self.turn, self.t1, self.t2, time.time(), self.board)
+                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board,last_tick=time.time())
                         game.run()
                     elif x in range(240, 480) and y in range(560, 630):
                         game = Game(self.gameidx).game
-                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray,turn=1,t1=self.t1, t2=self.t2,last_tick=time.time())
+                        if self.mode in {0, 2}:
+                            game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign,CommonWC, Pause, self.movearray, turn=1)
+                            game.run()
+                        if self.mode == 1.1:
+                            selected_time = 5
+                        elif self.mode == 1.2:
+                            selected_time = 10
+                        elif self.mode == 1.3:
+                            selected_time = 15
+                        elif self.mode == 1.4:
+                            selected_time = 20
+                        elif self.mode == 1.5:
+                            selected_time = 30
+                        seconds = selected_time * 60
+                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,Pause, self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                         game.run()
                     elif x in range(515, 760) and y in range(565, 630):
                         gameselected = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
                         gameselected.run()
-
-class SavedGames:
-    def __init__(self, player1, player2, screen, gameidx):
-        self.player1 = player1
-        self.player2 = player2
-        self.screen = screen
-        self.gameidx = gameidx
-        self.games = []
-        self.page = 0
-        self.PAGE_SIZE = 9
-
-    def load_saved_games(self):
-        game_name = Game(self.gameidx).name.strip()
-        self.games = []
-        try:
-            with open("SavedGames.txt", "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        data = eval(line, {"datetime": __import__("datetime")})
-                        if isinstance(data, list) and len(data) > 0:
-                            meta = data[0]
-                            if isinstance(meta, tuple) and len(meta) == 4:
-                                if meta[1].strip() == game_name:
-                                    self.games.append(data)
-                    except:
-                        continue
-        except FileNotFoundError:
-            pass
-
-    def run(self):
-        self.load_saved_games()
-        background = pygame.image.load("SavedGames.png")
-        background = pygame.transform.scale(background, (1000, 700))
-        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 18)
-
-        while True:
-            self.screen.blit(background, (0, 0))
-
-            start = self.page * self.PAGE_SIZE
-            page_games = self.games[start:start + self.PAGE_SIZE]
-
-            row_positions = [277, 319, 361, 403, 445, 485, 523, 565, 605]
-
-            for i, game_data in enumerate(page_games):
-                meta = game_data[0]
-                p1 = str(meta[2])
-                p2 = str(meta[3])
-                t = meta[0]
-                time_str = t.strftime("%Y-%m-%d %H:%M") if hasattr(t, "strftime") else str(t)
-
-                y = row_positions[i]
-                self.screen.blit(font.render(p1[:12], True, (255, 255, 255)), (260, y))
-                self.screen.blit(font.render(p2[:12], True, (255, 255, 255)), (420, y))
-                self.screen.blit(font.render(time_str, True, (255, 255, 255)), (580, y))
-            
-            pygame.display.flip()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
-                
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-
-                    if (x - 63)**2 + (y - 61)**2 < 1600:
-                        gs = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
-                        gs.run()
-                        return
-                    
-                    if x in range(850, 900) and y in range(605, 655):
-                        if self.page > 0:
-                            self.page -= 1
-                    
-                    elif x in range(920, 970) and y in range(605, 655):
-                        if (self.page + 1) * self.PAGE_SIZE < len(self.games):
-                            self.page += 1
-
-                    elif x in range(185, 1165) and y in range(250, 820):
-                        for i, row_y in enumerate(row_positions):
-                            if y in range(row_y - 5, row_y + 35):
-                                game_idx_in_list = start + i
-                                if game_idx_in_list < len(self.games):
-                                    self.replay_game(self.games[game_idx_in_list])
-                                break
-
-    def replay_game(self, game_data):
-        meta = game_data[0]
-        moves = game_data[1:]
-
-        moves = [m for m in moves if isinstance(m, tuple) and isinstance(m[0], int)]
-
-        game_name = Game(self.gameidx).name.strip()
-
-        if game_name == "Connect4":
-            self.replay_connect4(meta, moves)
-        elif game_name == "TicTacToe":
-            self.replay_tictactoe(meta, moves)
-        elif game_name == "Othello":
-            self.replay_othello(meta, moves)
-
-    def replay_connect4(self, meta, moves):
-        import numpy as np
-        board = np.zeros((7, 7))
-
-        background = pygame.image.load("Connect4Background.png")
-        background = pygame.transform.scale(background, (1000, 700))
-        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
-        small_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 20)
-
-        p1 = meta[2]
-        p2 = meta[3]
-
-        def draw_board():
-            self.screen.blit(background, (0, 0))
-            text = font.render(p1, False, (255, 255, 255))
-            text.set_alpha(150)
-            self.screen.blit(text, (145, 45))
-            text = font.render(p2, False, (255, 255, 255))
-            text.set_alpha(150)
-            self.screen.blit(text, (640, 45))
-            for x, y in np.argwhere(board == 1):
-                img = pygame.image.load("lucky.png")
-                img = pygame.transform.scale(img, (40, 40))
-                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
-            for x, y in np.argwhere(board == 2):
-                img = pygame.image.load("MagicCatFace.png")
-                img = pygame.transform.scale(img, (40, 40))
-                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
-            hint = small_font.render("Click anywhere to advance", True, (200, 200, 200))
-            self.screen.blit(hint, (350, 650))
-            pygame.display.flip()
-
-        draw_board()
-
-        move_idx = 0
-        waiting = True
-
-        while waiting:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if move_idx < len(moves):
-                        move = moves[move_idx]
-                        # move = (turn, col, row) or (0, 'Resigned', 0) etc.
-                        if move[0] in (1, 2) and isinstance(move[1], int):
-                            turn, col, row = move
-                            board[col][row] = turn
-                        move_idx += 1
-                        draw_board()
-                    else:
-                        # Replay done, go back to saved games menu
-                        self.run()
-                        return
 
 
 def compute_leaderboard(sort_by="wins", game_filter=None):
