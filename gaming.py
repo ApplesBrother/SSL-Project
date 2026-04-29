@@ -13,7 +13,7 @@ import time
 class Game:
     def __init__(self, index):
         games = [TicTacToe, Connect4, Othello, Catan]
-        names = ["TicTacToe", " Connect4", "    Othello", "      Catan", "Bazinga"]
+        names = ["TicTacToe", "Connect4", "Othello", "Catan", "Bazinga"]
         self.name = names[index]
         self.game = games[index]
 
@@ -26,6 +26,13 @@ class FirstUI:
 
     def run(self):
         background = pygame.image.load("MCA Background.png")
+        icons = [
+            pygame.image.load("TicTacToeIcon.png"),
+            pygame.image.load("Connect4Icon.png"),
+            pygame.image.load("OthelloIcon.png"),
+            pygame.image.load("CatanIcon.png")
+        ]
+        icons = [pygame.transform.scale(icon, (120, 120)) for icon in icons]
         pygame.display.set_caption("Shabam")
         background = pygame.transform.scale(background, (1000, 700))
         self.screen.blit(background, (0, 0))
@@ -38,8 +45,9 @@ class FirstUI:
         self.screen.blit(text, (725, 43))
         t = pygame.Surface((150, 150), pygame.SRCALPHA)
         pygame.draw.rect(t, (255, 255, 255, 150), (0, 0, 130, 130), 4, border_radius=5)
-        for x in range(210, 750, 145):
+        for i, x in enumerate(range(210, 750, 145)):
             self.screen.blit(t, (x, 390))
+            self.screen.blit(icons[i], (x+5, 395))
         running = True
         while running:
             pygame.display.flip()
@@ -107,7 +115,11 @@ class GameSelected:
                     elif x in range(300, 700) and y in range(640, 685):
                         firstui = FirstUI(self.player1, self.player2, self.screen)
                         firstui.run()
-                    if mode in {0, 1, 2, 3}:
+                    
+                    if mode == 3:
+                        saved = SavedGames(self.player1, self.player2, self.screen, self.gameidx)
+                        saved.run()
+                    if mode in {0, 1, 2}:
                         movearray = []
                         game = game(self.player1, self.player2, mode, self.screen, GameSelected, Resign, CommonWC,
                                     Pause, movearray)
@@ -156,8 +168,7 @@ class Resign:
                         commonwc.run()
                     elif x in range(395, 605) and y in range(620, 670):
                         game = Game(self.gameidx).game
-                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board, last_tick=self.last_tick)
+                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC, Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board, last_tick=self.last_tick)
                         game.run()
 
 
@@ -175,7 +186,7 @@ class CommonWC:
 
     def run(self):
         if self.mode in {0, 1}:
-            updatecsv = UpdateCSV(self.player1, self.player2, self.gameidx, self.whowon)
+            updatecsv = UpdateCSV(self.player1, self.player2, self.gameidx, self.whowon, self.mode)
             updatecsv.run()
             if self.gameidx==0:
                 os.system("bash leaderboard.sh TicTacToe wins &")
@@ -293,6 +304,8 @@ def get_latest_ratings():
         with open("history.csv", newline = "") as f:
             reader = csv.reader(f)
             for row in reader:
+                if row[6] == "Rating1":
+                    continue
                 p1 = row[3]
                 p2 = row[4]
 
@@ -332,22 +345,27 @@ def update_elo_inline(p1, p2, result, K = 32):
 
 
 class UpdateCSV:
-    def __init__(self, player1, player2, game, result):
-        self.player1 = player1
-        self.player2 = player2
-        self.game = game
-        self.result = result
+        def __init__(self, player1, player2, game, result, mode):
+            self.player1 = player1
+            self.player2 = player2
+            self.game = game
+            self.result = result
+            self.mode = mode
 
-    def run(self):
-        Time = datetime.now().replace(microsecond=0, second=0)
-        with open("Serial.txt", "r", newline="") as Sno:
-            Sno = int(Sno.read())
-            Sno += 1
-        with open("Serial.txt", "w") as NewSno:
-            NewSno.write(str(Sno))
-        with open("history.csv", "a", newline="") as history:
-            append = csv.writer(history)
-            append.writerow([Sno, Time, self.game, self.player1, self.player2, self.result])
+        def run(self):
+            Time = datetime.now().replace(microsecond=0, second=0)
+            with open("Serial.txt", "r", newline="") as Sno:
+                Sno = int(Sno.read())
+                Sno += 1
+            with open("Serial.txt", "w") as NewSno:
+                NewSno.write(str(Sno))
+            with open("history.csv", "a", newline="") as history:
+                append = csv.writer(history)
+                if self.mode != 2:
+                    r1, r2 = update_elo_inline(self.player1, self.player2, self.result)
+                else:
+                    r1, r2 = get_latest_ratings().get(self.player1, 1000), get_latest_ratings().get(self.player2, 1000)
+                append.writerow([Sno, Time, self.game, self.player1, self.player2, self.result, r1, r2])
 
 
 class Pause:
@@ -415,7 +433,9 @@ def compute_leaderboard(sort_by="wins", game_filter=None):
         reader = csv.reader(f)
 
         for row in reader:
-            game = row[2]
+            if row[6] == "Rating1":
+                continue
+            game = int(row[2])
             p1 = row[3]
             p2 = row[4]
             result = int(row[5])
@@ -860,110 +880,7 @@ class SavedGames:
                     else:
                         self.run()
                         return
-
-
-class LEADERBOARD:
-    def __init__(self, player1, player2, screen):
-        self.player1 = player1
-        self.player2 = player2
-        self.screen = screen
-
-    def run(self):
-        background = pygame.image.load("Leaderboard.png")
-        background = pygame.transform.scale(background, (1000, 700))
-        self.screen.blit(background, (0, 0))
-        pygame.draw.rect(self.screen, (255, 255, 255), (150, 230, 280, 280), width=4)
-        for x in (0, 1):
-            for y in (0, 1):
-                pygame.draw.rect(self.screen, (255, 255, 255), (520 + 147.5 * x, 230 + 147.5 * y, 130, 130), width=4)
-        pygame.display.flip()
-
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-                    background = pygame.image.load("Leaderboardprint.png")
-                    background = pygame.transform.scale(background, (1000, 700))
-
-                    if (x - 147) ** 2 + (y - 143) ** 2 < 2025:
-                        game = FirstUI(self.player1, self.player2, self.screen)
-                        game.run()
-
-                    elif x in range(150, 430) and y in range(230, 510):
-                        os.system("bash leaderboard.sh Overall wins &")
-                        self.screen.blit(background, (0, 0))
-                        pygame.display.flip()
-                        self.show(None)
-
-                    elif x in range(520, 650) and y in range(230, 360):
-                        os.system("bash leaderboard.sh TicTacToe wins &")
-                        self.screen.blit(background, (0, 0))
-                        pygame.display.flip()
-                        self.show("TicTacToe")
-
-                    elif x in range(670, 800) and y in range(230, 360):
-                        os.system("bash leaderboard.sh Connect4 wins &")
-                        self.screen.blit(background, (0, 0))
-                        pygame.display.flip()
-                        self.show("Connect4")
-
-                    elif x in range(520, 650) and y in range(380, 510):
-                        os.system("bash leaderboard.sh Othello wins &")
-                        self.screen.blit(background, (0, 0))
-                        pygame.display.flip()
-                        self.show("Othello")
-
-                    elif x in range(670, 800) and y in range(380, 510):
-                        os.system("bash leaderboard.sh Catan wins &")
-                        self.screen.blit(background, (0, 0))
-                        pygame.display.flip()
-                        self.show("Catan")
-
-    def show(self, game_filter, sortidx=0):
-        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 18)
-
-        sort_options = ["wins", "losses", "ratio", "rating"]
-
-        while True:
-            background = pygame.image.load("Leaderboardprint.png")
-            background = pygame.transform.scale(background, (1000, 700))
-            self.screen.blit(background, (0, 0))
-
-            data = compute_leaderboard(sort_options[sortidx], game_filter)
-            y = 275
-            row_height = 38
-
-            for i, row in enumerate(data[:10]):
-                ratio = "∞" if row["ratio"] == float("inf") else f"{row['ratio']:.2f}"
-                rating = int(row["wins"] * 10)
-
-                self.screen.blit(font.render(row["player"], True, (255, 255, 255)), (200, y))
-                self.screen.blit(font.render(str(int(row["wins"])), True, (255, 255, 255)), (410, y))
-                self.screen.blit(font.render(str(int(row["losses"])), True, (255, 255, 255)), (530, y))
-                self.screen.blit(font.render(ratio, True, (255, 255, 255)), (650, y))
-                self.screen.blit(font.render(str(rating), True, (255, 255, 255)), (800, y))
-
-                y += row_height
-
-            pygame.display.flip()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-
-                    if (x - 57) ** 2 + (y - 57) ** 2 < 1600:
-                        game = LEADERBOARD(self.player1, self.player2, self.screen)
-                        game.run()
-
-                    elif x in range(840, 980) and y in range(110, 150):
-                        self.show(game_filter, (sortidx + 1) % 4)
-
-
+                    
 class HTP:
     def __init__(self, player1, player2, screen):
         self.player1 = player1
@@ -972,11 +889,25 @@ class HTP:
 
     def run(self):
         background = pygame.image.load("HTP.png")
+        icons = [
+            pygame.image.load("TicTacToeIcon.png"),
+            pygame.image.load("Connect4Icon.png"),
+            pygame.image.load("OthelloIcon.png"),
+            pygame.image.load("CatanIcon.png")
+        ]
+        icons = [pygame.transform.scale(icon, (170, 170)) for icon in icons]
         background = pygame.transform.scale(background, (1000, 700))
         self.screen.blit(background, (0, 0))
-        for x in (0, 1):
-            for y in (0, 1):
-                pygame.draw.rect(self.screen, (255, 255, 255), (160 + 500 * x, 180 + 200 * y, 180, 180), 4)
+        positions = [
+            (160, 180),  # TicTacToe
+            (660, 180),  # Connect4
+            (160, 380),  # Othello
+            (660, 380)   # Catan
+        ]
+
+        for i, (x, y) in enumerate(positions):
+            pygame.draw.rect(self.screen, (255, 255, 255), (x, y, 180, 180), 4)
+            self.screen.blit(icons[i], (x + 5, y + 5))
         pygame.display.flip()
         while True:
             for event in pygame.event.get():
@@ -1123,10 +1054,12 @@ class STATS:
             reader = csv.reader(f)
             next(reader)
             for row in reader:
+                if row[6] == "Rating1":
+                    continue
                 p1 = row[3]
                 p2 = row[4]
                 result = int(row[5])
-                game = row[2]
+                game = int(row[2])
                 games.append(game)
                 if result == 1:
                     wins[p1] += 1
@@ -1191,3 +1124,4 @@ Bigscreen = pygame.display.set_mode((1000, 700))
 Biggame = FirstUI('str(sys.argv[1])', 'str(sys.argv[2])', Bigscreen)
 Biggame.run()
 pygame.quit()
+
