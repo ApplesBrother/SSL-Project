@@ -1121,7 +1121,7 @@ clock = pygame.time.Clock()
 clock.tick(60)
 pygame.init()
 Bigscreen = pygame.display.set_mode((1000, 700))
-Biggame = FirstUI('str(sys.argv[1])', 'str(sys.argv[2])', Bigscreen)
+Biggame = FirstUI(str(sys.argv[1]), str(sys.argv[2]), Bigscreen)
 Biggame.run()
 pygame.quit()
 
