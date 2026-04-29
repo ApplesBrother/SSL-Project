@@ -1,5 +1,6 @@
 import csv
-with open("history.csv", "w") as history:
+import os
+with open("history.csv", "w",newline="") as history:
     append = csv.writer(history)
     append.writerow(["Idx", "Time", "Game", "Player 1","Player 2", "Result"])
 with open("Serial.txt", "w") as history:
