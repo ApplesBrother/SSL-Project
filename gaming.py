@@ -157,12 +157,12 @@ class Resign:
                     elif x in range(395, 605) and y in range(620, 670):
                         game = Game(self.gameidx).game
                         game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray, self.turn, self.t1, self.t2, self.last_tick, self.board)
+                                    Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board, last_tick=self.last_tick)
                         game.run()
 
 
 class CommonWC:
-    def __init__(self, player1, player2, whowon, mode, screen, movearray, gameidx):
+    def __init__(self, player1, player2, whowon, mode, screen, movearray, gameidx,t1=None,t2=None):
         self.player1 = player1
         self.player2 = player2
         self.whowon = whowon
@@ -170,6 +170,8 @@ class CommonWC:
         self.mode = mode
         self.movearray = movearray
         self.gameidx = gameidx
+        self.t1 = t1
+        self.t2 = t2
 
     def run(self):
         if self.mode in {0, 1}:
@@ -209,8 +211,18 @@ class CommonWC:
                             game.run()
                         elif x in range(517, 673) and y in range(523, 576):
                             game = Game(self.gameidx).game
-                            game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign,
-                                        CommonWC, Pause, self.movearray)
+                            if self.mode == 1.1:
+                                selected_time = 5
+                            elif self.mode == 1.2:
+                                selected_time = 10
+                            elif self.mode == 1.3:
+                                selected_time = 15
+                            elif self.mode == 1.4:
+                                selected_time = 20
+                            elif self.mode == 1.5:
+                                selected_time = 30
+                            seconds = selected_time * 60
+                            game = game(self.player1,self.player2,self.mode,self.screen,GameSelected,Resign,CommonWC,Pause,self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                             game.run()
                         elif x in range(686, 819) and y in range(523, 576):
                             gameselected = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
@@ -230,8 +242,19 @@ class CommonWC:
                         x, y = pygame.mouse.get_pos()
                         if x in range(150, 315) and y in range(575, 640):
                             game = Game(self.gameidx).game
+                            if self.mode == 1.1:
+                                selected_time = 5
+                            elif self.mode == 1.2:
+                                selected_time = 10
+                            elif self.mode == 1.3:
+                                selected_time = 15
+                            elif self.mode == 1.4:
+                                selected_time = 20
+                            elif self.mode == 1.5:
+                                selected_time = 30
+                            seconds = selected_time * 60
                             game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign,
-                                        CommonWC, Pause, self.movearray)
+                                        CommonWC, Pause, self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                             game.run()
                         elif x in range(340, 555) and y in range(575, 640):
                             self.movearray = [(datetime.now().replace(microsecond=0), Game(self.gameidx).name,
@@ -294,13 +317,22 @@ class Pause:
                     x, y = pygame.mouse.get_pos()
                     if x in range(375, 620) and y in range(470, 540):
                         game = Game(self.gameidx).game
-                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray, self.turn, self.t1, self.t2, time.time(), self.board)
+                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,Pause, self.movearray,  t1=self.t1, t2=self.t2,turn=self.turn,board=self.board,last_tick=time.time())
                         game.run()
                     elif x in range(240, 480) and y in range(560, 630):
                         game = Game(self.gameidx).game
-                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,
-                                    Pause, self.movearray)
+                        if self.mode == 1.1:
+                            selected_time = 5
+                        elif self.mode == 1.2:
+                            selected_time = 10
+                        elif self.mode == 1.3:
+                            selected_time = 15
+                        elif self.mode == 1.4:
+                            selected_time = 20
+                        elif self.mode == 1.5:
+                            selected_time = 30
+                        seconds = selected_time * 60
+                        game = game(self.player1, self.player2, self.mode, self.screen, GameSelected, Resign, CommonWC,Pause, self.movearray,t1=seconds,t2=seconds,turn=1,last_tick=time.time())
                         game.run()
                     elif x in range(515, 760) and y in range(565, 630):
                         gameselected = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
@@ -698,9 +730,12 @@ class STATS:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     x, y = pygame.mouse.get_pos()
                     if x in range(50, 200) and y in range(50, 90):
-                        game = FirstUI(self.player1, self.player2, self.screen)
-                        game.run()
-
+                        if self.idx is None:
+                            game = FirstUI(self.player1, self.player2, self.screen)
+                            game.run()
+                        else:
+                            game=GameSelected(self.player1, self.player2,self.idx, self.screen)
+                            game.run()
 
 clock = pygame.time.Clock()
 clock.tick(60)
