@@ -1,0 +1,363 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+
+\definecolor{primary}{RGB}{25,70,140}
+\definecolor{accent}{RGB}{200,150,20}
+\definecolor{codebg}{RGB}{246,248,250}
+\definecolor{codeframe}{RGB}{180,200,230}
+\definecolor{kw}{RGB}{25,70,140}
+\definecolor{str}{RGB}{150,40,150}
+\definecolor{cmt}{RGB}{80,140,80}
+\definecolor{gray}{RGB}{120,120,120}
+
+\lstdefinestyle{code}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{kw}\bfseries,
+  stringstyle=\color{str},
+  commentstyle=\color{cmt}\itshape,
+  numberstyle=\tiny\color{gray},
+  numbers=left, numbersep=6pt,
+  breaklines=true, frame=single,
+  rulecolor=\color{codeframe},
+  xleftmargin=12pt, tabsize=4,
+  showstringspaces=false,
+  captionpos=b,
+}
+\lstset{style=code}
+
+\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection}{0.8em}{}[\vspace{-4pt}\color{primary}\hrule\vspace{4pt}]
+\titleformat{\subsection}{\large\bfseries\color{primary!80!black}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{primary!60!black}}{\thesubsubsection}{0.6em}{}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\color{primary}\textbf{Mini Game Hub}}
+\fancyhead[R]{\small\color{gray}SSL Project Report}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\newtcolorbox{notebox}{
+  colback=codebg, colframe=primary!40,
+  boxrule=0.5pt, arc=4pt, left=6pt, right=6pt, top=4pt, bottom=4pt,
+}
+
+\hypersetup{colorlinks,linkcolor=primary,urlcolor=primary}
+
+\begin{document}
+
+\begin{titlepage}
+\centering\vspace*{2.5cm}
+{\color{primary}\rule{\linewidth}{1.5pt}}\vspace{6pt}
+{\color{primary}\rule{\linewidth}{0.4pt}}\vspace{1.2cm}
+
+{\Huge\bfseries\color{primary} Mini Game Hub}\\\vspace{0.4cm}
+{\large\itshape SSL Project Technical Report}\\\vspace{1cm}
+
+{\color{primary}\rule{\linewidth}{0.4pt}}\vspace{6pt}
+{\color{primary}\rule{\linewidth}{1.5pt}}\vspace{2cm}
+
+\begin{tcolorbox}[colback=codebg,colframe=primary!50,arc=5pt,width=0.82\textwidth]
+\centering\large
+A secure, multi-user game hub featuring four classic\\
+two-player board games, built with Bash, Python,\\
+Pygame, and NumPy.
+\end{tcolorbox}
+
+\vspace{2cm}
+{\large\textbf{Team:} Rajit \textbullet\ Aagam}\\[0.5cm]
+{\large\textbf{Date:} April 2026}\\[0.5cm]
+{\large\textbf{Stack:} Python 3 \textbullet\ Pygame \textbullet\ NumPy \textbullet\ Bash}
+\vfill
+{\color{gray}\small Systems and Software Lab (SSL) Academic Project}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{External Libraries}
+
+\begin{table}[H]
+\centering
+\caption{External libraries and tools used}
+\begin{tabular}{L{3cm} L{3cm} L{8cm}}
+\toprule
+\textbf{Library / Tool} & \textbf{Version} & \textbf{Purpose} \\
+\midrule
+Python 3  & 3.10+  & Primary application language \\
+Pygame    & 2.x    & Window management, event loop, sprite/image rendering, font drawing \\
+NumPy     & 1.x    & 2-D array board representation and vectorised win-detection \\
+Bash      & 5.x    & Authentication front-end: password hashing, TSV credential lookup, app launch \\
+\texttt{csv} (stdlib) & — & Reading and writing \texttt{history.csv} game records \\
+\texttt{datetime} (stdlib) & — & Timestamping match results \\
+\texttt{sys} (stdlib) & — & Access to interpreter-level functionality via command-line arguments\\
+\texttt{os} (stdlib) & — & Operating system interface: file/directory management, path handling, and process control\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No third-party packages beyond Pygame and NumPy are required.
+
+% ════════════════════════════════════════════════════════════════
+\section{Design \& Architecture}
+% ════════════════════════════════════════════════════════════════
+
+\subsection{High-Level Structure}
+
+The system is divided into three layers with clear responsibilities:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Authentication layer} (Bash): Runs in the terminal before any graphical window opens. Handles user registration and login using SHA-256 password hashing and a plain-text TSV credential store, then launches the Python application with the two player names as arguments.
+  \item \textbf{Hub / controller layer} (\texttt{gaming.py}): Owns the single shared Pygame surface (1000$\times$700 px). Manages the main menu, game-selection screen, post-game flow, leaderboard, and CSV persistence. All UI transitions are handled here.
+  \item \textbf{Game layer} (individual game modules): Each game is a self-contained class that receives the shared surface and a set of controller-class references via its constructor. The class runs its own \texttt{run()} event loop and calls back into the hub classes on termination.
+\end{enumerate}
+
+\subsection{Key Design Decisions}
+
+\textbf{Single shared Pygame surface.}
+Rather than creating a new window per game, all classes draw to the same 1000$\times$700 surface. This avoids multi-window complexity and gives a seamless transition feel.
+
+\textbf{Constructor injection instead of globals.}
+Every game class receives \texttt{GameSelected}, \texttt{Resign}, \texttt{CommonWC}, and \texttt{UpdateCSV} as constructor parameters. This keeps each module independently testable and decoupled from \texttt{gaming.py}'s internal state.
+
+\textbf{Flat file persistence.}
+A CSV for match history and a TSV for credentials were chosen over a database because they require no external server, are human-readable, and are trivially portable. Python's built-in \texttt{csv} module handles all I/O.
+
+\textbf{Move array pattern.}
+Each game appends every move as a tuple to a shared \texttt{movearray} list passed in at construction. The first element is always a sentinel \texttt{(0, "GameName", 0)}. On game end, the entire array is optionally serialised to \texttt{SavedGames.txt}.
+
+% ════════════════════════════════════════════════════════════════
+\section{Features Implemented}
+% ════════════════════════════════════════════════════════════════
+
+\subsection{Authentication System}
+\begin{itemize}[leftmargin=2em]
+  \item User registration and login via terminal (Bash).
+  \item Passwords hashed with SHA-256; never stored in plain text.
+  \item Credentials persisted in \texttt{users.tsv} (tab-separated: username, hash).
+  \item Input masking (\texttt{read -s}) during password entry.
+\end{itemize}
+
+\subsection{Main Menu}
+\begin{itemize}[leftmargin=2em]
+  \item Custom background image with semi-transparent player name overlays.
+  \item Navigation buttons for Leaderboard, Stats, How To Play, Settings, and four game tiles.
+  \item Game tiles rendered as clickable icon regions; hovering and clicking routed to \texttt{GameSelected}.
+\end{itemize}
+
+\subsection{Games}
+
+\subsubsection{Tic-Tac-Toe}
+Modified version of the classic game, this one is played on a $10\times10$ board. Board stored as a NumPy array; win detection checks row/column/diagonal sums. Draws detected when all cells are filled with no winner.
+
+\subsubsection{Connect Four}
+7$\times$7 dropping-disc game. Gravity implemented by scanning from the bottom of each column for the first empty cell. Win detection slides a window of four cells across all rows, columns, and both diagonals.
+
+\subsubsection{Othello}
+8$\times$8 disc-flipping strategy game. Valid move generation traces all eight directions from a candidate cell. On placement, all flippable opponent discs in every direction are converted. Auto-passes turn when no moves exist. Disc count determines winner.
+
+\subsubsection{Catan (Simplified)}
+The most complex game: a two-player adaptation of \textit{Settlers of Catan} on a 7-tile hexagonal board.
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Hex board generation:} Axial coordinate system with random resource and number-token placement. Port system assigned to ring tiles (2:1 specific-resource and 3:1 general ports).
+  \item \textbf{Graph construction:} Vertices and edges derived from hex geometry; shared vertices between adjacent tiles deduplicated via rounded grid keys. Adjacency map supports road/settlement validation.
+  \item \textbf{Setup phase:} Alternating settlement+road placement with distance-rule enforcement.
+  \item \textbf{Main phase:} Dice roll, resource distribution to adjacent settlements/cities, building (road, settlement, city), development card play, and end-turn.
+  \item \textbf{Robber:} Triggered on roll of 7; active player moves robber, players with 7+ cards discard half, player steals one resource from opponent on that tile.
+  \item \textbf{Development cards:} Knight, Road Building, Monopoly, Year of Plenty.
+  \item \textbf{Trading:} Maritime bank trade (4:1 standard), Port trades (2:1/3:1) and player-to-player trade with accept/reject flow.
+  \item \textbf{Longest Road / Largest Army:} Computed via DFS over the road graph; 2 VP bonus awarded dynamically.
+  \item \textbf{Win condition:} First to 6 Victory Points (settlements, cities, special cards).
+\end{itemize}
+
+\subsection{Post-Game Flow}
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Win screen}: \texttt{WinnerFace.png} with the winner's name rendered in large type.
+  \item \textbf{Draw screen}: dedicated \texttt{ItsaDraw.png} layout.
+  \item \textbf{Resignation}: Confirmation screen (\texttt{ResignCat.png}); move array updated before result is logged.
+  \item Four post-game actions: \textit{Save game} (serialise move array to \texttt{SavedGames.txt}), \textit{Rematch} (reinvoke same game/mode), \textit{Stats} (show plots of player and game stats), \textit{Return} (back to \texttt{GameSelected}).
+\end{itemize}
+
+\subsection{Leaderboard}
+\begin{itemize}[leftmargin=2em]
+  \item Reads \texttt{history.csv} and aggregates wins, losses, and win/loss ratio per player.
+  \item Draws award 0.5 wins and 0.5 losses to each player.
+  \item Filterable by game (Overall, Tic-Tac-Toe, Connect Four, Othello).
+  \item Sortable by wins, losses, or ratio via in-screen dropdown.
+  \item Infinite ratio (zero losses) displayed as $\infty$.
+\end{itemize}
+
+\subsection{How To Play}
+In-hub rules reference accessible from the main menu. Three game thumbnails navigate to per-game instruction pages rendered on a clean background.
+
+\subsection{Persistent Data}
+\begin{itemize}[leftmargin=2em]
+  \item Every game result written to \texttt{history.csv} with serial number, timestamp, game name, both players, and result code.
+  \item Serial counter auto-incremented in \texttt{Serial.txt}.
+  \item Move arrays optionally saved to \texttt{SavedGames.txt}.
+\end{itemize}
+
+% ════════════════════════════════════════════════════════════════
+\section{Directory Structure}
+% ════════════════════════════════════════════════════════════════
+
+\begin{lstlisting}[language=bash, caption={Annotated project tree}]
+SSL-Project/
+|
+|-- main.sh                # Entry point: Bash auth, launches gaming.py
+|-- gaming.py              # Hub controller: menus, leaderboard, CSV, UI classes
+|-- Catan.py               # Full Catan game implementation (1057 lines)
+|-- Redirect.py            # Alternate lightweight menu/redirect module
+|
+|-- users.tsv              # Credential store: username<TAB>sha256-hash
+|-- history.csv            # Match log: serial,timestamp,game,p1,p2,result
+|-- SavedGames.txt         # Serialised move arrays from completed games
+|-- Serial.txt             # Auto-incrementing match ID counter
+|
+|-- MCA Background.png     # Main menu background
+|-- Connect4Background.png # Connect Four game background
+|-- OthelloBackground.png  # Othello game background
+|-- WinnerFace.png         # Win result screen background
+|-- ResignCat.png          # Resignation confirmation background
+|-- MagicCatFace.png       # Draw/misc result background
+|
+|-- settlement_p1.png      # Catan: Player 1 settlement sprite
+|-- settlement_p2.png      # Catan: Player 2 settlement sprite
+|-- road_p1.png            # Catan: Player 1 road sprite
+|-- road_p2.png            # Catan: Player 2 road sprite
+|-- wood.png               # Catan: Wood resource tile
+|-- brick.png              # Catan: Brick resource tile
+|-- wool.png               # Catan: Wool resource tile
+|-- wheat.png              # Catan: Wheat resource tile
+|-- ore.png                # Catan: Ore resource tile
+\end{lstlisting}
+
+% ════════════════════════════════════════════════════════════════
+\section{Installation \& Setup}
+% ════════════════════════════════════════════════════════════════
+
+\subsection{Prerequisites}
+\begin{itemize}[leftmargin=2em]
+  \item Python 3.10 or later
+  \item pip
+  \item A Unix-like shell (Linux or macOS); on Windows, use WSL
+\end{itemize}
+
+\subsection{Installing Dependencies}
+
+\begin{lstlisting}[language=bash, caption={Install Python dependencies}]
+pip install -r requirements.txt
+\end{lstlisting}
+
+\noindent The \texttt{requirements.txt} file contains:
+
+\begin{lstlisting}[caption={requirements.txt}]
+pygame>=2.0.0
+numpy>=1.21.0
+\end{lstlisting}
+
+\subsection{Font Asset}
+The hub uses \texttt{Fredoka\_Expanded-Bold.ttf}. Place this font file in the project root directory (same level as \texttt{gaming.py}). It can be downloaded from Google Fonts:
+
+\begin{notebox}
+\textbf{Font:} \url{https://fonts.google.com/specimen/Fredoka}
+\end{notebox}
+
+\subsection{Large Assets}
+All PNG background and sprite assets are bundled in the submission zip. No external downloads are needed for images.
+
+\subsection{Using the Makefile}
+
+\begin{lstlisting}[language=bash, caption={Makefile targets}]
+make install   # pip install -r requirements.txt
+make run       # bash main.sh
+make clean     # remove __pycache__ and .pyc files
+\end{lstlisting}
+
+% ════════════════════════════════════════════════════════════════
+\section{Usage}
+% ════════════════════════════════════════════════════════════════
+
+\subsection{Running the Hub}
+
+\begin{lstlisting}[language=bash, caption={Launching the game hub}]
+bash main.sh
+\end{lstlisting}
+
+The terminal will prompt for two players to log in (or register). On successful authentication, the Pygame window opens automatically.
+
+\subsection{Navigation}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Main Menu}: Click a game icon at the bottom to select a game. Use the top navigation bar for Leaderboard, Stats, How To Play, and Settings.
+  \item \textbf{In-Game}: Click to place pieces / make moves. A Resign button is available at any time.
+  \item \textbf{Post-Game}: Choose Save, Rematch, Stats or Return from the result screen.
+  \item \textbf{Leaderboard}: Select Overall or a specific game; use the Sort dropdown to reorder by wins, losses, or ratio.
+\end{enumerate}
+
+
+% ════════════════════════════════════════════════════════════════
+\section{Retrospective}
+% ════════════════════════════════════════════════════════════════
+
+\subsection{Challenges and How We Overcame Them}
+
+\textbf{Hexagonal grid mathematics (Catan).}
+Computing vertex positions from axial coordinates and correctly deduplicating shared vertices between adjacent hexagons required careful floating-point rounding. We resolved this by normalising each vertex coordinate to a rounded grid key \texttt{(round(x/10), round(y/10))} before storing, guaranteeing that geometrically identical points map to the same ID regardless of which tile generated them.
+
+\textbf{Graph construction for road validation.}
+Validating road placement (must connect to existing network) and computing the longest road required a proper adjacency graph. We built the edge-to-vertex map dynamically during board initialisation and used iterative DFS with backtracking to compute road length, which also handles branching paths correctly.
+
+\textbf{State transitions across UI classes.}
+Each class runs its own Pygame event loop, making it easy to lose track of which loop is ``active''. We standardised the pattern: every class returns cleanly from \texttt{run()} when it wants to hand control back, and all navigation is done by the \textit{caller} after \texttt{run()} returns - no global state, no threading.
+
+\textbf{CSV header inconsistency.}
+Early in development some rows were written without headers, causing \texttt{DictReader} field misalignment. We fixed this by writing the header once during file creation and using \texttt{newline=""} consistently to avoid platform-specific line-ending issues.
+
+\textbf{Player-to-player trading in Catan.}
+Implementing the ``awaiting response'' pattern, pausing one player's input while the other accepts or rejects a trade, required an explicit \texttt{awaiting\_response} flag that gates all normal input processing. This proved simpler than any callback or threading approach.
+
+\subsection{What We Would Do Differently}
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Add password salting.} The current SHA-256 scheme is unsalted, meaning identical passwords produce identical hashes. A per-user random salt stored alongside the hash would eliminate rainbow-table vulnerability.
+  \item \textbf{Implement Chess.} The game map reserves slot 3 for Chess but the class was never built. Given more time, integrating \texttt{python-chess} for move validation and a minimax AI would complete the original five-game vision.
+  \item \textbf{Automated testing.} Because every class is tightly coupled to Pygame's display, unit-testing game logic required running the GUI. Separating board/logic classes from rendering classes from the start would have enabled clean pytest coverage.
+  \item \textbf{Config file for assets.} Font paths and image paths are hardcoded strings scattered across multiple files. A single \texttt{config.py} with all asset paths would make the project far easier to port or rename assets.
+\end{itemize}
+
+% ════════════════════════════════════════════════════════════════
+\section*{References}
+\addcontentsline{toc}{section}{References}
+% ════════════════════════════════════════════════════════════════
+
+\begin{enumerate}[leftmargin=2em]
+  \item Pygame documentation: \url{https://www.pygame.org/docs/}
+  \item NumPy documentation: \url{https://numpy.org/doc/}
+  \item \textit{Settlers of Catan} rulebook: Catan GmbH, used as reference for game mechanics.
+  \item Google Fonts - Fredoka typeface: \url{https://fonts.google.com/specimen/Fredoka}
+  \item SHA-256 in Bash: \texttt{man sha256sum} / \texttt{man openssl dgst}
+\end{enumerate}
+
+\end{document}
