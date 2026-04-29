@@ -177,6 +177,12 @@ class CommonWC:
         if self.mode in {0, 1}:
             updatecsv = UpdateCSV(self.player1, self.player2, self.gameidx, self.whowon)
             updatecsv.run()
+            if self.gameidx==0:
+                os.system("bash leaderboard.sh TicTacToe wins &")
+            elif self.gameidx==1:
+                os.system("bash leaderboard.sh Connect4 wins &")
+            elif self.gameidx==2:
+                os.system("bash leaderboard.sh Othello wins &")
         if self.whowon != 0:
             background = pygame.image.load("WinnerFace.png")
             background = pygame.transform.scale(background, (1000, 700))
