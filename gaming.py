@@ -283,6 +283,53 @@ class CommonWC:
                             gameselected = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
                             gameselected.run()
 
+def expected_score(r1, r2):
+    return 1 / (1 + 10 ** ((r2 - r1) / 400))
+
+def get_latest_ratings():
+    ratings = {}
+
+    try:
+        with open("history.csv", newline = "") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                p1 = row[3]
+                p2 = row[4]
+
+                if row[6] and row[7]:
+                    ratings[p1] = float(row[6])
+                    ratings[p2] = float(row[7])
+    except FileNotFoundError:
+        pass
+
+    return ratings
+
+def update_elo_inline(p1, p2, result, K = 32):
+    ratings = get_latest_ratings()
+
+    r1 = ratings.get(p1, 1000)
+    r2 = ratings.get(p2, 1000)
+
+    e1 = expected_score(r1, r2)
+    e2 = expected_score(r2, r1)
+
+    if result == 1:
+        s1 = 1
+        s2 = 0
+    elif result == 0:
+        s1 = 0
+        s2 = 1
+    else:
+        s1 = 0.5
+        s2 = 0.5
+
+    new_r1 = r1 + K * (s1 - e1)
+    new_r2 = r2 + K * (s2 - e2)
+
+    return round(new_r1, 2), round(new_r2, 2)
+
+
+
 
 class UpdateCSV:
     def __init__(self, player1, player2, game, result):
@@ -430,6 +477,272 @@ def compute_leaderboard(sort_by="wins", game_filter=None):
         leaderboard.sort(key=lambda x: (x["wins"] * 10), reverse=True)
 
     return leaderboard
+
+
+class SavedGames:
+    def __init__(self, player1, player2, screen, gameidx):
+        self.player1 = player1
+        self.player2 = player2
+        self.screen = screen
+        self.gameidx = gameidx
+        self.games = []
+        self.page = 0
+        self.PAGE_SIZE = 9
+
+    def load_saved_games(self):
+        game_name = Game(self.gameidx).name.strip()
+        self.games = []
+        try:
+            with open("SavedGames.txt", "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = eval(line, {"datetime": __import__("datetime")})
+                        if isinstance(data, list) and len(data) > 0:
+                            meta = data[0]
+                            if isinstance(meta, tuple) and len(meta) == 4:
+                                if meta[1].strip() == game_name:
+                                    self.games.append(data)
+                    except:
+                        continue
+        except FileNotFoundError:
+            pass
+
+    def run(self):
+        self.load_saved_games()
+        background = pygame.image.load("SavedGames.png")
+        background = pygame.transform.scale(background, (1000, 700))
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 18)
+
+        while True:
+            self.screen.blit(background, (0, 0))
+
+            start = self.page * self.PAGE_SIZE
+            page_games = self.games[start:start + self.PAGE_SIZE]
+
+            row_positions = [277, 319, 361, 403, 445, 485, 523, 565, 605]
+
+            for i, game_data in enumerate(page_games):
+                meta = game_data[0]
+                p1 = str(meta[2])
+                p2 = str(meta[3])
+                t = meta[0]
+                time_str = t.strftime("%Y-%m-%d %H:%M") if hasattr(t, "strftime") else str(t)
+
+                y = row_positions[i]
+                self.screen.blit(font.render(p1[:12], True, (255, 255, 255)), (260, y))
+                self.screen.blit(font.render(p2[:12], True, (255, 255, 255)), (420, y))
+                self.screen.blit(font.render(time_str, True, (255, 255, 255)), (580, y))
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = pygame.mouse.get_pos()
+
+                    if (x - 63) ** 2 + (y - 61) ** 2 < 1600:
+                        gs = GameSelected(self.player1, self.player2, self.gameidx, self.screen)
+                        gs.run()
+                        return
+
+                    if x in range(850, 900) and y in range(605, 655):
+                        if self.page > 0:
+                            self.page -= 1
+
+                    elif x in range(920, 970) and y in range(605, 655):
+                        if (self.page + 1) * self.PAGE_SIZE < len(self.games):
+                            self.page += 1
+
+                    elif x in range(185, 1165) and y in range(250, 820):
+                        for i, row_y in enumerate(row_positions):
+                            if y in range(row_y - 5, row_y + 35):
+                                game_idx_in_list = start + i
+                                if game_idx_in_list < len(self.games):
+                                    self.replay_game(self.games[game_idx_in_list])
+                                break
+
+    def replay_game(self, game_data):
+        meta = game_data[0]
+        moves = game_data[1:]
+
+        moves = [m for m in moves if isinstance(m, tuple) and isinstance(m[0], int)]
+
+        game_name = Game(self.gameidx).name.strip()
+
+        if game_name == "Connect4":
+            self.replay_connect4(meta, moves)
+        elif game_name == "TicTacToe":
+            self.replay_tictactoe(meta, moves)
+        elif game_name == "Othello":
+            self.replay_othello(meta, moves)
+
+    def replay_connect4(self, meta, moves):
+        import numpy as np
+        board = np.zeros((7, 7))
+
+        background = pygame.image.load("Connect4Background.png")
+        background = pygame.transform.scale(background, (1000, 700))
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
+        small_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 20)
+
+        p1 = meta[2]
+        p2 = meta[3]
+
+        def draw_board():
+            self.screen.blit(background, (0, 0))
+            text = font.render(p1, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (145, 45))
+            text = font.render(p2, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (640, 45))
+            for x, y in np.argwhere(board == 1):
+                img = pygame.image.load("lucky.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
+            for x, y in np.argwhere(board == 2):
+                img = pygame.image.load("MagicCatFace.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
+            hint = small_font.render("Click anywhere to advance", True, (200, 200, 200))
+            self.screen.blit(hint, (350, 650))
+            pygame.display.flip()
+
+        draw_board()
+
+        move_idx = 0
+        waiting = True
+
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if move_idx < len(moves):
+                        move = moves[move_idx]
+                        # move = (turn, col, row) or (0, 'Resigned', 0) etc.
+                        if move[0] in (1, 2) and isinstance(move[1], int):
+                            turn, col, row = move
+                            board[col][row] = turn
+                        move_idx += 1
+                        draw_board()
+                    else:
+                        # Replay done, go back to saved games menu
+                        self.run()
+                        return
+
+    def replay_tictactoe(self, meta, moves):
+        board = np.zeros((10, 10))
+
+        background = pygame.image.load("TicTacToeBackground.png")
+        background = pygame.transform.scale(background, (1000, 700))
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
+        small_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 20)
+
+        p1 = meta[2]
+        p2 = meta[3]
+
+        def draw_board():
+            self.screen.blit(background, (0, 0))
+            text = font.render(p1, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (145, 45))
+            text = font.render(p2, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (640, 45))
+            for x, y in np.argwhere(board == 1):
+                img = pygame.image.load("lucky.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (287 + 42.8 * x, 183 + 40.3 * y))
+            for x, y in np.argwhere(board == 2):
+                img = pygame.image.load("MagicCatFace.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (287 + 42.8 * x, 183 + 40.3 * y))
+            hint = small_font.render("Click anywhere to advance", True, (200, 200, 200))
+            self.screen.blit(hint, (350, 650))
+            pygame.display.flip()
+
+        draw_board()
+
+        move_idx = 0
+        waiting = True
+
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if move_idx < len(moves):
+                        move = moves[move_idx]
+                        if move[0] in (1, 2) and isinstance(move[1], int):
+                            turn, col, row = move
+                            board[col][row] = turn
+                        move_idx += 1
+                        draw_board()
+                    else:
+                        self.run()
+                        return
+
+    def replay_othello(self, meta, moves):
+        board = np.zeros((8, 8))
+
+        background = pygame.image.load("OthelloBackground.png")
+        background = pygame.transform.scale(background, (1000, 700))
+        font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
+        small_font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 20)
+
+        p1 = meta[2]
+        p2 = meta[3]
+
+        def draw_board():
+            self.screen.blit(background, (0, 0))
+            text = font.render(p1, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (145, 45))
+            text = font.render(p2, False, (255, 255, 255))
+            text.set_alpha(150)
+            self.screen.blit(text, (640, 45))
+            for x, y in np.argwhere(board == 1):
+                img = pygame.image.load("lucky.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
+            for x, y in np.argwhere(board == 2):
+                img = pygame.image.load("MagicCatFace.png")
+                img = pygame.transform.scale(img, (40, 40))
+                self.screen.blit(img, (295.5 + 61.4 * x, 190.5 + 57.5 * y))
+            hint = small_font.render("Click anywhere to advance", True, (200, 200, 200))
+            self.screen.blit(hint, (350, 650))
+            pygame.display.flip()
+
+        draw_board()
+
+        move_idx = 0
+        waiting = True
+
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if move_idx < len(moves):
+                        move = moves[move_idx]
+                        if move[0] in (1, 2) and isinstance(move[1], int):
+                            turn, col, row = move
+                            board[col][row] = turn
+                        move_idx += 1
+                        draw_board()
+                    else:
+                        self.run()
+                        return
 
 
 class LEADERBOARD:
@@ -758,6 +1071,6 @@ clock = pygame.time.Clock()
 clock.tick(60)
 pygame.init()
 Bigscreen = pygame.display.set_mode((1000, 700))
-Biggame = FirstUI(str(sys.argv[1]), str(sys.argv[2]), Bigscreen)
+Biggame = FirstUI('str(sys.argv[1])', 'str(sys.argv[2])', Bigscreen)
 Biggame.run()
 pygame.quit()
