@@ -439,7 +439,7 @@ def compute_leaderboard(sort_by="wins", game_filter=None):
             p1 = row[3]
             p2 = row[4]
             result = int(row[5])
-
+            game = Game(game).name
             if game_filter and game != game_filter:
                 continue
 
@@ -452,7 +452,7 @@ def compute_leaderboard(sort_by="wins", game_filter=None):
 
             stats.setdefault(key1, {"wins": 0.0, "losses": 0.0})
             stats.setdefault(key2, {"wins": 0.0, "losses": 0.0})
-
+            
             if result == 1:
                 stats[key1]["wins"] += 1
                 stats[key2]["losses"] += 1
