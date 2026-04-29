@@ -2,15 +2,13 @@ import pygame
 import numpy as np
 import time
 import math
-
-
 draw1=False
 draw2=False
 
 class Connect4:
-    def __init__(self,player1,player2,mode,screen,GameSelected,Resign,CommonWC,Pause,movearray,turn=1,t1=10,t2=10,last_tick=None,board=None):
+    def __init__(self,player1,player2,mode,screen,GameSelected,Resign,CommonWC,Pause,movearray,t1=0,t2=0,turn=1,board=None,last_tick=time.time()):
         self.idx=1
-        if mode in {0,1,2}:
+        if int(mode) in {0,1,2}:
             self.player1=player1
             self.player2=player2
             self.screen=screen
@@ -20,12 +18,12 @@ class Connect4:
             self.Resign=Resign
             self.CommonWC=CommonWC
             self.board = board.copy() if board is not None else np.zeros((7,7))
-            self.timed=(mode==1)
-            self.t1=t1
-            self.t2=t2
-            self.last_tick = last_tick if last_tick is not None else time.time()
+            self.timed=(int(mode)!=mode)
             self.turn=turn
             self.Pause=Pause
+            self.t1=t1
+            self.t2=t2
+            self.last_tick=last_tick
         elif mode==3:
             self.player1 = player1
             self.player2 = player2
@@ -60,7 +58,7 @@ class Connect4:
         return f"{t//60}:{t%60:02d}"
 
     def run(self):
-        if self.mode in {0,1,2}:
+        if int(self.mode) in {0,2}:
             background = pygame.image.load("Connect4Background.png")
             background = pygame.transform.scale(background, (1000, 700))
             font = pygame.font.Font("Fredoka_Expanded-Bold.ttf", 30)
@@ -71,38 +69,35 @@ class Connect4:
             draw2 = False
             while running:
                 self.screen.blit(background, (0, 0))
+                if self.timed:
+                    presenttime = time.time()
+                    dt = presenttime - self.last_tick
+                    self.last_tick = presenttime
+
+                    if self.turn == 1:
+                        self.t1 -= dt
+                        if self.t1 <= 0:
+                            self.CommonWC(self.player1, self.player2, 2, self.mode+1, self.screen, self.movearray,
+                                          self.idx).run()
+                            return
+                    else:
+                        self.t2 -= dt
+                        if self.t2 <= 0:
+                            self.CommonWC(self.player1, self.player2, 1, self.mode+1, self.screen, self.movearray,
+                                          self.idx).run()
+                            return
                 text = font.render(self.player1, False, (255, 255, 255))
                 text.set_alpha(150)
                 self.screen.blit(text, (145, 45))
                 text = font.render(self.player2, False, (255, 255, 255))
                 text.set_alpha(150)
                 self.screen.blit(text, (640, 45))
-                if self.timed:
-                    presenttime = time.time()
-                    dt = presenttime - self.last_tick
-                    self.last_tick = presenttime
-                    if self.turn == 1:
-                        self.t1 -= dt
-                    else:
-                        self.t2-=dt
-                    t1 = tfont.render(self.writetime(self.t1), False, (255, 255, 255))
-                    t2 = tfont.render(self.writetime(self.t2), False, (255, 255, 255))
-                    self.screen.blit(t1, (120, 185))
-                    self.screen.blit(t2, (810, 185))
-                    self.clock(160, 300, self.t1, self.turn == 1)
-                    self.clock(845, 300, self.t2, self.turn == 2)
-                    if self.t1<0:
-                        self.turn = 1
-                        self.CommonWC(self.player1, self.player2, 2, self.mode, self.screen, self.movearray,self.idx).run()
-                    if self.t2<0:
-                        self.turn = 1
-                        self.CommonWC(self.player1, self.player2, 1, self.mode, self.screen, self.movearray,self.idx).run()
                 if draw1 and draw2:
                     draw1 = False
                     draw2 = False
                     self.turn = 1
                     self.movearray.append((0, "Match Drawn", 0))
-                    self.CommonWC(self.player1, self.player2, 0, self.mode, self.screen, self.movearray,self.idx).run()
+                    self.CommonWC(self.player1, self.player2, 0, self.mode+self.timed, self.screen, self.movearray,self.idx).run()
                 self.loadboard(self.board)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -110,15 +105,15 @@ class Connect4:
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         x, y = pygame.mouse.get_pos()
                         if (x-63)**2+(y-61)**2<2025:
-                            self.Pause(self.player1,self.player2,self.board,self.screen,self.mode,self.movearray,self.idx,self.turn,self.t1,self.t2).run()
+                            self.Pause(self.player1,self.player2,self.board,self.screen,self.mode+self.timed,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2).run()
                         if x in range(85, 215) and y in range(425, 475):
                             draw1 = not draw1
                         elif x in range(785, 915) and y in range(425, 475):
                             draw2 = not draw2
                         elif x in range(85, 215) and y in range(490, 545):
-                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 2,self.movearray,self.idx,self.turn,self.t1,self.t2,self.last_tick).run()
+                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode+self.timed, 2,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2,last_tick=self.last_tick).run()
                         elif x in range(780, 915) and y in range(490, 545):
-                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode, 1,self.movearray,self.idx,self.turn,self.t1,self.t2,self.last_tick).run()
+                            self.Resign(self.player1, self.player2, self.board, self.screen, self.mode+self.timed, 1,self.movearray,self.idx,self.turn,t1=self.t1,t2=self.t2,last_tick=self.last_tick).run()
                         elif x in range(290, 710) and y in range(185, 575):
                             if (x - 290) % 61 < 50:
                                 col = (x - 290) // 61
@@ -134,17 +129,59 @@ class Connect4:
                                 result = Connect4WC(self.board).run()
                                 if result != -1:
                                     self.turn = 1
-                                    self.CommonWC(self.player1, self.player2, result, self.mode, self.screen,self.movearray,self.idx).run()
+                                    self.CommonWC(self.player1, self.player2, result, self.mode+self.timed, self.screen,self.movearray,self.idx).run()
                                 self.turn = 3 - self.turn
-                                if self.timed:
-                                    self.last_tick = time.time()
                 if draw1:
                     pygame.draw.rect(self.screen, (255, 255, 255), (84, 426, 135, 58), 4, 20)
                 if draw2:
                     pygame.draw.rect(self.screen, (255, 255, 255), (781, 425, 136, 54), 4, 20)
+                if self.timed:
+                    self.clock(150, 150, self.t1, self.turn == 1)
+                    self.clock(850, 150, self.t2, self.turn == 2)
+                    time1 = tfont.render(self.writetime(self.t1), True, (255, 255, 255))
+                    time2 = tfont.render(self.writetime(self.t2), True, (255, 255, 255))
+
+                    self.screen.blit(time1, (110, 230))
+                    self.screen.blit(time2, (810, 230))
+
+
                 pygame.display.flip()
+        elif int(self.mode) == 1:
+            if self.mode==1:
+                background = pygame.image.load("TimeSelect.png")
+                background = pygame.transform.scale(background, (1000, 700))
+                self.screen.blit(background, (0, 0))
+                pygame.display.flip()
+                while True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            x, y = pygame.mouse.get_pos()
+                            selected_time = None
+
+                            if x in range(123, 227) and y in range(262, 390):
+                                selected_time = 5
+                                self.mode = 1.1
+                            elif x in range(251, 387) and y in range(255, 391):
+                                selected_time = 10
+                                self.mode = 1.2
+                            elif x in range(405, 569) and y in range(249, 413):
+                                selected_time = 15
+                                self.mode = 1.3
+                            elif x in range(585, 729) and y in range(253, 413):
+                                selected_time = 20
+                                self.mode = 1.4
+                            elif x in range(742, 910) and y in range(245, 405):
+                                selected_time = 30
+                                self.mode = 1.5
+                            if selected_time is not None:
+                                seconds = selected_time * 60
+                                game = Connect4(self.player1, self.player2, self.mode - 1, self.screen,self.GameSelected, self.Resign, self.CommonWC, self.Pause,self.movearray,t1=seconds,t2=seconds, turn=1, last_tick=time.time())
+                                game.run()
+            else:
+                game=Connect4(self.player1, self.player2, self.mode - 1, self.screen, self.GameSelected, self.Resign, self.CommonWC, self.Pause,self.movearray, t1=self.t1, t2=self.t2,turn=self.turn,board=self.board,last_tick=time.time())
+                game.run()
+
         elif self.mode==3:
-            SavedGame
             background = pygame.image.load("SavedGames.png")
             background = pygame.transform.scale(background, (1000, 700))
             self.screen.blit(background, (0, 0))
